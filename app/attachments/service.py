@@ -17,7 +17,9 @@ class AttachmentWorkflow:
             ExtractionStatus.NOT_STARTED,
             ExtractionStatus.FAILED,
         }:
-            raise InvalidAttachmentTransition("Extraction can only start from not-started or failed")
+            raise InvalidAttachmentTransition(
+                "Extraction can only start from not-started or failed"
+            )
         return record.model_copy(
             update={
                 "extraction_status": ExtractionStatus.PROCESSING,
