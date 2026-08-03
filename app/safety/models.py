@@ -27,30 +27,48 @@ class RuleMetadata(BaseModel):
     status: RuleStatus
     severity: SafetySeverity
     response_template: str
-    clinician_signoff_id: str | None = None
+    clinician_signoff_ids: tuple[str, ...] = ()
+    governance_release_id: str | None = None
+    governance_content_digest: Annotated[
+        str | None,
+        Field(pattern=r"^[0-9a-f]{64}$"),
+    ] = None
     approved_at: datetime | None = None
     next_review_at: datetime | None = None
 
     @model_validator(mode="after")
     def validate_approval_metadata(self) -> "RuleMetadata":
-        if self.status is RuleStatus.APPROVED:
-            if not self.clinician_signoff_id or not self.approved_at or not self.next_review_at:
-                raise ValueError(
-                    "Approved rules require clinician sign-off, approval time, and next review time"
-                )
-            if self.next_review_at <= self.approved_at:
-                raise ValueError("Rule review time must be later than its approval time")
+        if self.status is not RuleStatus.APPROVED:
+            return self
+
+        signoff_ids = {item.strip() for item in self.clinician_signoff_ids if item.strip()}
+        if len(signoff_ids) < 2:
+            raise ValueError("Approved rules require two distinct clinician sign-offs")
+        if not self.governance_release_id or not self.governance_content_digest:
+            raise ValueError("Approved rules require a governance release ID and content digest")
+        if not self.approved_at or not self.next_review_at:
+            raise ValueError("Approved rules require approval and next-review times")
+        if self.approved_at.utcoffset() is None or self.next_review_at.utcoffset() is None:
+            raise ValueError("Approved rule timestamps must include timezone information")
+        if self.next_review_at <= self.approved_at:
+            raise ValueError("Rule review time must be later than its approval time")
         return self
+
+    def is_clinically_approved_at(self, checked_at: datetime) -> bool:
+        signoff_ids = {item.strip() for item in self.clinician_signoff_ids if item.strip()}
+        return (
+            self.status is RuleStatus.APPROVED
+            and len(signoff_ids) >= 2
+            and bool(self.governance_release_id)
+            and bool(self.governance_content_digest)
+            and self.approved_at is not None
+            and self.next_review_at is not None
+            and self.approved_at <= checked_at < self.next_review_at
+        )
 
     @property
     def is_clinically_approved(self) -> bool:
-        return (
-            self.status is RuleStatus.APPROVED
-            and bool(self.clinician_signoff_id)
-            and self.approved_at is not None
-            and self.next_review_at is not None
-            and self.next_review_at > datetime.now(UTC)
-        )
+        return self.is_clinically_approved_at(datetime.now(UTC))
 
 
 class SymptomAssessmentRequest(BaseModel):

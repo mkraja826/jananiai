@@ -2,12 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 18%
+## Current verified progress: 22%
 
 Updated: 2026-08-04
-Branch: `phase-3/authenticated-persistence`
-Latest verified implementation commit: `5b4210a`
-Draft PR: `#3`
+Branch: `phase-4/clinical-safety-governance`
+Latest verified implementation commit: `148565f`
+Draft PR: `#4`
 
 ## Foundation completed and verified
 
@@ -83,9 +83,37 @@ Draft PR: `#3`
 - [x] Added Windows PowerShell instructions for the same local validation flow.
 - [x] GitHub Actions passed on `5b4210a`: quality pipeline and free local-Supabase pipeline both green; 9/9 local RLS/RPC/Storage tests passed.
 
+## Phase 4 clinical safety governance foundation completed and verified
+
+- [x] Replaced single-signoff approval metadata with two distinct clinician sign-offs.
+- [x] Bound approved engine rules to a governance release ID and SHA-256 candidate digest.
+- [x] Added reviewer roles for obstetrician, clinical safety, and language review.
+- [x] Added reviewer identity, jurisdiction, license reference, verification time, expiry, and active status.
+- [x] Added clinical-source provenance, section, review time, expiry, and development-placeholder controls.
+- [x] Added gestational applicability boundaries and required structured-input fields.
+- [x] Added versioned English and Telugu escalation-wording contracts.
+- [x] Added immutable candidate content digests and exact-content clinical reviews.
+- [x] Required two distinct reviewers with obstetrician and clinical-safety roles for release approval.
+- [x] Prevented releases from outliving their sources or reviewer credentials.
+- [x] Added approved, active, retired, expired, and rolled-back release states.
+- [x] Added activation, retirement, replacement, and rollback controls.
+- [x] Added immutable governance-event models and append-only database history.
+- [x] Converted all seven development warning rules into versioned review candidates.
+- [x] Marked every current candidate with development-placeholder provenance so approval remains impossible.
+- [x] Added service-role-only Supabase reviewer, candidate, review, release, approval, and event tables.
+- [x] Denied end-user access to all clinical-governance tables and RPCs.
+- [x] Added per-approval validation of reviewer identity, role, candidate digest, and credential validity.
+- [x] Added static migration-contract tests and adversarial governance tests.
+- [x] Added local-Supabase integration tests for end-user denial, dual approval, activation, immutability, and append-only history.
+- [x] Documented the clinical safety governance lifecycle and remaining launch gates.
+- [x] GitHub Actions passed on `148565f`: Ruff lint and formatting, 27 safety tests, 96.87% safety-module coverage, 80 full-suite tests, 10 expected staging skips, Docker build, eight migrations rebuilt from zero, and 10/10 local RLS/RPC/Storage/governance tests.
+
 ## Current limitations
 
-- Draft warning rules have not been reviewed or approved by a licensed clinician.
+- No licensed clinician identity or credential has been entered into Janani AI.
+- No warning rule has been reviewed or approved by a licensed clinician.
+- Every current safety candidate contains development-placeholder provenance and cannot be activated.
+- Current English and Telugu escalation wording remains development-only and not clinically approved.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
@@ -97,17 +125,18 @@ Draft PR: `#3`
 - No caregiver sharing or permissions model is implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: 18–30% — clinician-approved deterministic safety engine
+## Next milestone: 22–30% — clinically reviewed deterministic safety rules
 
-- Establish clinician reviewer identities, roles, and dual-approval workflow.
-- Convert draft warning rules into versioned review candidates.
-- Add source provenance and rationale for every condition and threshold.
-- Add applicability boundaries by pregnancy stage and structured input requirements.
-- Add approval expiry, retirement, replacement, and rollback controls.
-- Add immutable review and activation audit events.
-- Expand true-positive, false-positive, boundary, interaction, and regression tests.
-- Add versioned clinician-reviewed escalation wording in English and Telugu.
-- Keep all rules inactive for real users until clinician sign-off and later hosted staging validation are complete.
+- Establish the authorised reviewer onboarding and conflict-of-interest policy.
+- Verify real obstetrician and clinical-safety reviewer credentials outside source control.
+- Replace development placeholders with current clinician-reviewed sources and exact sections.
+- Document rationale and applicability boundaries for each warning rule.
+- Review English and Telugu escalation wording with clinical and language reviewers.
+- Add true-positive, false-positive, boundary, interaction, and regression datasets for each candidate.
+- Add ruleset-level release composition, atomic activation, and rollback tests.
+- Add controlled administration APIs that never expose the service-role key to mobile clients.
+- Repeat governance validation in an isolated hosted staging environment before any real-user path.
+- Keep every rule inactive until all required reviews, tests, and launch gates pass.
 
 ## Revised roadmap allocation
 
@@ -128,6 +157,10 @@ Draft PR: `#3`
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-04 — 22%
+
+Built and verified the clinical safety governance foundation on `phase-4/clinical-safety-governance`. Added exact-content review candidates, reviewer credentials and roles, source expiry and placeholder controls, gestational applicability, dual obstetrician and clinical-safety approval, release activation/retirement/rollback, immutable audit history, service-role-only Supabase governance, and local end-to-end governance validation. All seven existing warning rules remain development-only and unapprovable. GitHub Actions passed on `148565f`: 27 safety tests with 96.87% coverage, 80 full-suite tests, 10 expected staging skips, Docker build, all eight migrations rebuilt from zero, and 10/10 local integration tests.
 
 ### 2026-08-04 — 18%
 

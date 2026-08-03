@@ -83,20 +83,25 @@ def test_production_mode_ignores_unapproved_rules() -> None:
     assert engine.clinical_ready is False
 
 
-def test_approved_rule_can_run_without_development_override() -> None:
-    draft = build_development_rules()[0]
-    approved_at = datetime.now(UTC)
-    approved_metadata = RuleMetadata(
+def approved_metadata(approved_at: datetime) -> RuleMetadata:
+    return RuleMetadata(
         rule_id="TEST-APPROVED-001",
         version="1.0.0",
         status=RuleStatus.APPROVED,
         severity=SafetySeverity.EMERGENCY,
         response_template="Approved test escalation.",
-        clinician_signoff_id="synthetic-clinician-id",
+        clinician_signoff_ids=("synthetic-obstetrician", "synthetic-safety-reviewer"),
+        governance_release_id="synthetic-release-id",
+        governance_content_digest="a" * 64,
         approved_at=approved_at,
         next_review_at=approved_at + timedelta(days=30),
     )
-    approved = replace(draft, metadata=approved_metadata)
+
+
+def test_dual_approved_rule_can_run_without_development_override() -> None:
+    draft = build_development_rules()[0]
+    approved_at = datetime.now(UTC)
+    approved = replace(draft, metadata=approved_metadata(approved_at))
     engine = SafetyEngine((approved,), "approved-test", allow_unapproved=False)
 
     decision = engine.evaluate(SymptomAssessmentRequest(seizure=True))
@@ -107,12 +112,68 @@ def test_approved_rule_can_run_without_development_override() -> None:
     assert engine.clinical_ready is True
 
 
-def test_approved_status_rejects_incomplete_signoff_metadata() -> None:
-    with pytest.raises(ValidationError):
+def test_approved_status_rejects_incomplete_governance_metadata() -> None:
+    with pytest.raises(ValidationError, match="two distinct"):
         RuleMetadata(
             rule_id="TEST-INCOMPLETE-001",
             version="1.0.0",
             status=RuleStatus.APPROVED,
             severity=SafetySeverity.URGENT,
             response_template="Incomplete approval must fail.",
+            clinician_signoff_ids=("one-reviewer",),
+        )
+
+
+def test_approved_status_rejects_missing_release_binding() -> None:
+    now = datetime.now(UTC)
+    with pytest.raises(ValidationError, match="governance release"):
+        RuleMetadata(
+            rule_id="TEST-INCOMPLETE-002",
+            version="1.0.0",
+            status=RuleStatus.APPROVED,
+            severity=SafetySeverity.URGENT,
+            response_template="Incomplete approval must fail.",
+            clinician_signoff_ids=("reviewer-a", "reviewer-b"),
+            approved_at=now,
+            next_review_at=now + timedelta(days=1),
+        )
+
+
+def test_approval_window_is_time_bounded() -> None:
+    approved_at = datetime.now(UTC) - timedelta(days=10)
+    metadata = approved_metadata(approved_at)
+
+    assert metadata.is_clinically_approved_at(approved_at + timedelta(days=1)) is True
+    assert metadata.is_clinically_approved_at(approved_at + timedelta(days=31)) is False
+
+
+def test_approved_status_rejects_naive_or_inverted_timestamps() -> None:
+    naive = datetime.now()
+    with pytest.raises(ValidationError, match="timezone"):
+        RuleMetadata(
+            rule_id="TEST-INCOMPLETE-003",
+            version="1.0.0",
+            status=RuleStatus.APPROVED,
+            severity=SafetySeverity.URGENT,
+            response_template="Incomplete approval must fail.",
+            clinician_signoff_ids=("reviewer-a", "reviewer-b"),
+            governance_release_id="release",
+            governance_content_digest="b" * 64,
+            approved_at=naive,
+            next_review_at=naive + timedelta(days=1),
+        )
+
+    now = datetime.now(UTC)
+    with pytest.raises(ValidationError, match="later"):
+        RuleMetadata(
+            rule_id="TEST-INCOMPLETE-004",
+            version="1.0.0",
+            status=RuleStatus.APPROVED,
+            severity=SafetySeverity.URGENT,
+            response_template="Incomplete approval must fail.",
+            clinician_signoff_ids=("reviewer-a", "reviewer-b"),
+            governance_release_id="release",
+            governance_content_digest="c" * 64,
+            approved_at=now,
+            next_review_at=now,
         )

@@ -33,7 +33,6 @@ def _draft_rule(
             status=RuleStatus.DRAFT,
             severity=severity,
             response_template=response_template,
-            clinician_signoff_id=None,
         ),
         predicate=predicate,
     )
