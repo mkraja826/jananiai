@@ -1,11 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from app.safety.governance import (
-    ClinicalSource,
-    LocalizedEscalationText,
-    RuleApplicability,
-    SafetyRuleCandidate,
-)
+from app.safety import governance
 from app.safety.rules import build_development_rules
 
 
@@ -27,11 +22,11 @@ _TELUGU_DEVELOPMENT_ONLY = (
 def build_development_candidates(
     *,
     created_at: datetime | None = None,
-) -> tuple[SafetyRuleCandidate, ...]:
+) -> tuple[governance.SafetyRuleCandidate, ...]:
     """Create review candidates that remain unapprovable until real sources replace placeholders."""
 
     now = created_at or datetime.now(UTC)
-    placeholder_source = ClinicalSource(
+    placeholder_source = governance.ClinicalSource(
         source_id="DEVELOPMENT-SOURCE-REQUIRED",
         title="Clinician-reviewed source required before approval",
         publisher="Janani AI development placeholder",
@@ -42,10 +37,10 @@ def build_development_candidates(
         development_placeholder=True,
     )
 
-    candidates: list[SafetyRuleCandidate] = []
+    candidates: list[governance.SafetyRuleCandidate] = []
     for rule in build_development_rules():
         candidates.append(
-            SafetyRuleCandidate(
+            governance.SafetyRuleCandidate(
                 rule_id=rule.metadata.rule_id,
                 version=rule.metadata.version,
                 severity=rule.metadata.severity,
@@ -54,10 +49,10 @@ def build_development_candidates(
                     "Development-only engineering candidate. A licensed clinical reviewer must "
                     "replace this placeholder with documented rationale and current sources."
                 ),
-                applicability=RuleApplicability(
+                applicability=governance.RuleApplicability(
                     required_structured_fields=_REQUIRED_FIELDS[rule.metadata.rule_id],
                 ),
-                escalation_text=LocalizedEscalationText(
+                escalation_text=governance.LocalizedEscalationText(
                     wording_version="development-only-1",
                     english=rule.metadata.response_template,
                     telugu=_TELUGU_DEVELOPMENT_ONLY,
