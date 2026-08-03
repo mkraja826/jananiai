@@ -1,8 +1,9 @@
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class RuleStatus(StrEnum):
@@ -27,10 +28,29 @@ class RuleMetadata(BaseModel):
     severity: SafetySeverity
     response_template: str
     clinician_signoff_id: str | None = None
+    approved_at: datetime | None = None
+    next_review_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_approval_metadata(self) -> "RuleMetadata":
+        if self.status is RuleStatus.APPROVED:
+            if not self.clinician_signoff_id or not self.approved_at or not self.next_review_at:
+                raise ValueError(
+                    "Approved rules require clinician sign-off, approval time, and next review time"
+                )
+            if self.next_review_at <= self.approved_at:
+                raise ValueError("Rule review time must be later than its approval time")
+        return self
 
     @property
     def is_clinically_approved(self) -> bool:
-        return self.status is RuleStatus.APPROVED and bool(self.clinician_signoff_id)
+        return (
+            self.status is RuleStatus.APPROVED
+            and bool(self.clinician_signoff_id)
+            and self.approved_at is not None
+            and self.next_review_at is not None
+            and self.next_review_at > datetime.now(UTC)
+        )
 
 
 class SymptomAssessmentRequest(BaseModel):
