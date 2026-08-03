@@ -30,7 +30,7 @@ def test_production_startup_is_blocked_without_approved_rules() -> None:
 
 
 def test_production_startup_accepts_current_approved_ruleset() -> None:
-    approved_at = datetime.now(UTC)
+    approved_at = datetime.now(UTC) - timedelta(seconds=1)
     draft = build_development_rules()[0]
     approved = replace(
         draft,
@@ -40,7 +40,12 @@ def test_production_startup_accepts_current_approved_ruleset() -> None:
             status=RuleStatus.APPROVED,
             severity=SafetySeverity.EMERGENCY,
             response_template="Approved test escalation.",
-            clinician_signoff_id="synthetic-clinician-id",
+            clinician_signoff_ids=(
+                "synthetic-obstetrician-id",
+                "synthetic-clinical-safety-id",
+            ),
+            governance_release_id="synthetic-production-release",
+            governance_content_digest="d" * 64,
             approved_at=approved_at,
             next_review_at=approved_at + timedelta(days=30),
         ),
