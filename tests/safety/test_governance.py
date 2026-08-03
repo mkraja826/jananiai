@@ -99,6 +99,27 @@ def candidate(
     )
 
 
+def release_payload(**overrides):
+    payload = {
+        "candidate_id": uuid4(),
+        "rule_id": "TEST-RULE",
+        "rule_version": "1",
+        "candidate_digest": "b" * 64,
+        "approval_review_ids": (uuid4(), uuid4()),
+        "reviewer_ids": (uuid4(), uuid4()),
+        "reviewer_roles": (
+            ReviewerRole.OBSTETRICIAN,
+            ReviewerRole.CLINICAL_SAFETY,
+        ),
+        "status": ReleaseStatus.APPROVED,
+        "approved_at": NOW,
+        "activates_at": NOW,
+        "expires_at": NOW + timedelta(days=1),
+    }
+    payload.update(overrides)
+    return payload
+
+
 def approved_release_bundle():
     service = SafetyGovernanceService()
     item = candidate()
@@ -129,7 +150,7 @@ def approved_release_bundle():
     return service, item, obstetrician, safety_reviewer, reviews, release
 
 
-def test_applicability_boundaries_and_candidate_digest_are_deterministic() -> None:
+def test_applicability_boundaries_and_digest_are_deterministic() -> None:
     item = candidate()
     applicability = item.applicability
 
@@ -152,33 +173,31 @@ def test_applicability_boundaries_and_candidate_digest_are_deterministic() -> No
     assert changed_content.content_digest() != item.content_digest()
 
 
-def test_happy_path_requires_role_separated_dual_approval() -> None:
+def test_happy_path_creates_engine_eligible_dual_approved_metadata() -> None:
     service, item, _, _, reviews, approved = approved_release_bundle()
-
-    assert approved.status is ReleaseStatus.APPROVED
-    assert len(set(approved.reviewer_ids)) == 2
-    assert set(approved.reviewer_roles) == {
-        ReviewerRole.OBSTETRICIAN,
-        ReviewerRole.CLINICAL_SAFETY,
-    }
-    assert approved.expires_at == NOW + timedelta(days=90)
-
     active = service.activate_release(approved, activated_at=NOW)
     metadata = service.build_approved_metadata(item, active, checked_at=NOW)
     rule = SafetyRule(metadata=metadata, predicate=lambda payload: payload.heavy_bleeding)
     engine = SafetyEngine((rule,), "governed-test", allow_unapproved=False)
     decision = engine.evaluate(SymptomAssessmentRequest(heavy_bleeding=True))
 
+    assert approved.status is ReleaseStatus.APPROVED
     assert active.status is ReleaseStatus.ACTIVE
+    assert approved.expires_at == NOW + timedelta(days=90)
+    assert set(approved.reviewer_roles) == {
+        ReviewerRole.OBSTETRICIAN,
+        ReviewerRole.CLINICAL_SAFETY,
+    }
+    assert len(set(approved.reviewer_ids)) == 2
+    assert {review.review_id for review in reviews} == set(approved.approval_review_ids)
     assert metadata.is_clinically_approved_at(NOW) is True
     assert metadata.governance_content_digest == item.content_digest()
     assert set(metadata.clinician_signoff_ids) == {str(value) for value in active.reviewer_ids}
     assert decision.triggered is True
     assert decision.ruleset_clinically_approved is True
-    assert {review.review_id for review in reviews} == set(active.approval_review_ids)
 
 
-def test_retirement_rollback_and_immutable_event_models() -> None:
+def test_retirement_rollback_and_immutable_event() -> None:
     service, _, _, _, _, approved = approved_release_bundle()
     active = service.activate_release(approved, activated_at=NOW)
     retired = service.retire_release(active, "Superseded after synthetic review")
@@ -215,7 +234,7 @@ def test_retirement_rollback_and_immutable_event_models() -> None:
         event.reason = "mutated"
 
 
-def test_reviewer_source_and_applicability_validation() -> None:
+def test_reviewer_source_applicability_and_candidate_validation() -> None:
     naive = datetime(2026, 8, 4)
     with pytest.raises(ValidationError, match="timezone"):
         reviewer(ReviewerRole.OBSTETRICIAN, verified_at=naive, expires_at=naive + timedelta(1))
@@ -238,21 +257,21 @@ def test_reviewer_source_and_applicability_validation() -> None:
             required_structured_fields=("gestational_week", "gestational_week")
         )
 
-
-def test_candidate_review_and_release_model_validation() -> None:
-    duplicate_source = source()
+    approved_payload = candidate().model_dump()
+    approved_payload["status"] = RuleStatus.APPROVED
     with pytest.raises(ValidationError, match="draft or under review"):
-        candidate().model_copy(update={"status": RuleStatus.APPROVED}, deep=True).__class__(
-            **candidate().model_dump(exclude={"status"}),
-            status=RuleStatus.APPROVED,
-        )
+        SafetyRuleCandidate.model_validate(approved_payload)
+
+    duplicate_source = source()
     with pytest.raises(ValidationError, match="source IDs"):
         candidate(source_items=(duplicate_source, duplicate_source))
 
     naive_payload = candidate().model_dump(exclude={"created_at"})
     with pytest.raises(ValidationError, match="creation time"):
-        SafetyRuleCandidate(**naive_payload, created_at=datetime(2026, 8, 4))
+        SafetyRuleCandidate(**naive_payload, created_at=naive)
 
+
+def test_review_and_release_model_validation() -> None:
     with pytest.raises(ValidationError, match="Review time"):
         ClinicalRuleReview(
             candidate_id=uuid4(),
@@ -264,37 +283,19 @@ def test_candidate_review_and_release_model_validation() -> None:
             reviewed_at=datetime(2026, 8, 4),
         )
 
-    release_payload = {
-        "candidate_id": uuid4(),
-        "rule_id": "TEST-RULE",
-        "rule_version": "1",
-        "candidate_digest": "b" * 64,
-        "approval_review_ids": (uuid4(), uuid4()),
-        "reviewer_ids": (uuid4(), uuid4()),
-        "reviewer_roles": (
-            ReviewerRole.OBSTETRICIAN,
-            ReviewerRole.CLINICAL_SAFETY,
-        ),
-        "status": ReleaseStatus.APPROVED,
-        "approved_at": NOW,
-        "activates_at": NOW,
-        "expires_at": NOW + timedelta(days=1),
-    }
     with pytest.raises(ValidationError, match="cannot precede"):
-        SafetyRuleRelease(**release_payload, activates_at=NOW - timedelta(seconds=1))
+        SafetyRuleRelease(**release_payload(activates_at=NOW - timedelta(seconds=1)))
     with pytest.raises(ValidationError, match="follow activation"):
-        SafetyRuleRelease(**release_payload, expires_at=NOW)
+        SafetyRuleRelease(**release_payload(expires_at=NOW))
     duplicate_review = uuid4()
     with pytest.raises(ValidationError, match="review IDs"):
         SafetyRuleRelease(
-            **release_payload,
-            approval_review_ids=(duplicate_review, duplicate_review),
+            **release_payload(approval_review_ids=(duplicate_review, duplicate_review))
         )
     duplicate_reviewer = uuid4()
     with pytest.raises(ValidationError, match="distinct reviewers"):
         SafetyRuleRelease(
-            **release_payload,
-            reviewer_ids=(duplicate_reviewer, duplicate_reviewer),
+            **release_payload(reviewer_ids=(duplicate_reviewer, duplicate_reviewer))
         )
 
 
@@ -302,8 +303,8 @@ def test_record_review_rejects_invalid_state_or_credentials() -> None:
     service = SafetyGovernanceService()
     item = candidate()
     valid = reviewer(ReviewerRole.OBSTETRICIAN)
-
     approved_candidate = item.model_copy(update={"status": RuleStatus.APPROVED})
+
     with pytest.raises(ValueError, match="draft or under-review"):
         service.record_review(
             approved_candidate,
@@ -313,14 +314,15 @@ def test_record_review_rejects_invalid_state_or_credentials() -> None:
             reviewed_at=NOW,
         )
 
-    for invalid in (
+    invalid_reviewers = (
         reviewer(ReviewerRole.OBSTETRICIAN, active=False),
         reviewer(
             ReviewerRole.OBSTETRICIAN,
             verified_at=NOW - timedelta(days=10),
             expires_at=NOW - timedelta(seconds=1),
         ),
-    ):
+    )
+    for invalid in invalid_reviewers:
         with pytest.raises(ValueError, match="credentials"):
             service.record_review(
                 item,
@@ -331,10 +333,8 @@ def test_record_review_rejects_invalid_state_or_credentials() -> None:
             )
 
 
-def test_release_approval_rejects_placeholder_or_expired_sources() -> None:
-    service = SafetyGovernanceService()
-    obstetrician = reviewer(ReviewerRole.OBSTETRICIAN)
-    safety_reviewer = reviewer(ReviewerRole.CLINICAL_SAFETY)
+def test_release_rejects_placeholder_expired_or_unbound_content() -> None:
+    service, item, obstetrician, safety_reviewer, reviews, _ = approved_release_bundle()
 
     for bad_source, expected in (
         (source(placeholder=True), "placeholder"),
@@ -346,17 +346,17 @@ def test_release_approval_rejects_placeholder_or_expired_sources() -> None:
             "current",
         ),
     ):
-        item = candidate(source_items=(bad_source,))
-        reviews = (
+        bad_item = candidate(source_items=(bad_source,))
+        bad_reviews = (
             service.record_review(
-                item,
+                bad_item,
                 obstetrician,
                 ReviewDecision.APPROVE,
                 "Synthetic obstetric approval rationale",
                 reviewed_at=NOW,
             ),
             service.record_review(
-                item,
+                bad_item,
                 safety_reviewer,
                 ReviewDecision.APPROVE,
                 "Synthetic safety approval rationale",
@@ -365,15 +365,11 @@ def test_release_approval_rejects_placeholder_or_expired_sources() -> None:
         )
         with pytest.raises(ValueError, match=expected):
             service.approve_release(
-                item,
-                reviews,
+                bad_item,
+                bad_reviews,
                 (obstetrician, safety_reviewer),
                 approved_at=NOW,
             )
-
-
-def test_release_approval_binds_exact_content_and_two_roles() -> None:
-    service, item, obstetrician, safety_reviewer, reviews, _ = approved_release_bundle()
 
     with pytest.raises(ValueError, match="At least two"):
         service.approve_release(
@@ -410,6 +406,10 @@ def test_release_approval_binds_exact_content_and_two_roles() -> None:
             approved_at=NOW,
         )
 
+
+def test_release_requires_distinct_reviewers_roles_and_current_registry() -> None:
+    service, item, obstetrician, safety_reviewer, reviews, _ = approved_release_bundle()
+
     duplicate_identity = reviews[1].model_copy(
         update={
             "reviewer_id": reviews[0].reviewer_id,
@@ -439,10 +439,6 @@ def test_release_approval_binds_exact_content_and_two_roles() -> None:
             (obstetrician, second_obstetrician),
             approved_at=NOW,
         )
-
-
-def test_release_approval_rejects_registry_and_expiry_problems() -> None:
-    service, item, obstetrician, safety_reviewer, reviews, _ = approved_release_bundle()
 
     with pytest.raises(ValueError, match="duplicate identities"):
         service.approve_release(
@@ -495,7 +491,7 @@ def test_release_approval_rejects_registry_and_expiry_problems() -> None:
         )
 
 
-def test_activation_retirement_rollback_and_metadata_fail_closed() -> None:
+def test_lifecycle_and_metadata_methods_fail_closed() -> None:
     service, item, _, _, _, approved = approved_release_bundle()
 
     with pytest.raises(ValueError, match="Only approved"):
@@ -528,12 +524,7 @@ def test_activation_retirement_rollback_and_metadata_fail_closed() -> None:
         }
     )
     with pytest.raises(ValueError, match="Only an active"):
-        service.rollback_release(
-            approved,
-            prior,
-            "Synthetic rollback",
-            rolled_back_at=NOW,
-        )
+        service.rollback_release(approved, prior, "Synthetic rollback", rolled_back_at=NOW)
     with pytest.raises(ValueError, match="same rule"):
         service.rollback_release(
             active,
