@@ -1,31 +1,46 @@
 # Janani AI
 
-Janani AI is the clinical-support intelligence layer for the Janani pregnancy application. It is designed to support women from preconception through delivery with personalised education, reminders, record summaries, report explanations, and clinician-approved warning-sign escalation.
+Janani AI is the clinical-support intelligence layer for the Janani pregnancy application. It supports women from preconception through delivery with personalised education, reminders, record summaries, report explanations, and clinician-approved warning-sign escalation.
 
 ## Safety position
 
-Janani AI is not a doctor and must not diagnose conditions, prescribe treatment, change medication doses, declare symptoms normal without assessment, replace antenatal care, or override an escalation produced by the deterministic safety engine.
+Janani AI is not a doctor. It must not diagnose, prescribe, change medication doses, declare symptoms safe without assessment, replace antenatal care, or override an escalation produced by the deterministic safety engine.
 
-The system will be built around four foundations:
+## Free-first development policy
 
-1. Deterministic, clinician-approved safety rules.
-2. Structured pregnancy and consent data.
-3. Retrieval from approved, versioned clinical content.
-4. Provider-independent language generation with validated outputs.
+The current phase uses only free/local components:
 
-## Planned stack
+- Python and FastAPI
+- deterministic safety rules
+- a mock LLM provider for synthetic tests
+- local Docker and GitHub Actions
+- Supabase-compatible migrations without requiring a paid plan
 
-- Python 3.12
-- FastAPI
-- Pydantic v2
-- Pytest
-- Ruff
-- Supabase Postgres, pgvector, Auth, RLS, and private Storage
-- Docker and GitHub Actions
-- Hosted LLM through a provider-independent adapter
-- scikit-learn for early specialised models
-- PyTorch and Hugging Face for later model work
+Real patient data is prohibited during this phase. Paid hosted models will only be evaluated after the safety, retrieval, privacy, and audit foundations are working.
 
-## Current status
+## Current milestone
 
-Repository initialised. The first engineering milestone is the production foundation and deterministic safety-engine scaffold.
+`phase-0-1/foundation` establishes:
+
+1. a typed FastAPI service and health endpoints;
+2. deterministic safety-engine interfaces;
+3. draft development rules that production mode cannot activate;
+4. provider-independent LLM interfaces with a mock implementation;
+5. automated tests, linting, Docker, CI, and progress tracking.
+
+## Local setup
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -e ".[dev]"
+pytest
+uvicorn app.main:app --reload
+```
+
+Open `http://127.0.0.1:8000/docs` for the generated OpenAPI interface.
+
+## Clinical readiness
+
+The service is **not clinically ready**. Draft rules and placeholder escalation wording require licensed-clinician review and sign-off before any real-user deployment.
