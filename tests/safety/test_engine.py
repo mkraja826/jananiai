@@ -1,6 +1,8 @@
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from app.safety.engine import SafetyEngine
 from app.safety.models import (
@@ -83,6 +85,7 @@ def test_production_mode_ignores_unapproved_rules() -> None:
 
 def test_approved_rule_can_run_without_development_override() -> None:
     draft = build_development_rules()[0]
+    approved_at = datetime.now(UTC)
     approved_metadata = RuleMetadata(
         rule_id="TEST-APPROVED-001",
         version="1.0.0",
@@ -90,6 +93,8 @@ def test_approved_rule_can_run_without_development_override() -> None:
         severity=SafetySeverity.EMERGENCY,
         response_template="Approved test escalation.",
         clinician_signoff_id="synthetic-clinician-id",
+        approved_at=approved_at,
+        next_review_at=approved_at + timedelta(days=30),
     )
     approved = replace(draft, metadata=approved_metadata)
     engine = SafetyEngine((approved,), "approved-test", allow_unapproved=False)
@@ -100,3 +105,14 @@ def test_approved_rule_can_run_without_development_override() -> None:
     assert decision.ruleset_clinically_approved is True
     assert decision.development_only is False
     assert engine.clinical_ready is True
+
+
+def test_approved_status_rejects_incomplete_signoff_metadata() -> None:
+    with pytest.raises(ValidationError):
+        RuleMetadata(
+            rule_id="TEST-INCOMPLETE-001",
+            version="1.0.0",
+            status=RuleStatus.APPROVED,
+            severity=SafetySeverity.URGENT,
+            response_template="Incomplete approval must fail.",
+        )
