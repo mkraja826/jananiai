@@ -12,9 +12,7 @@ _REQUIRED_FIELDS = {
     "DEV-HEADACHE-VISION-001": ("severe_headache", "vision_changes"),
 }
 
-_TELUGU_DEVELOPMENT_ONLY = (
-    "ఇది వైద్యపరంగా ఆమోదించని అభివృద్ధి నమూనా మాత్రమే; నిజమైన వినియోగానికి అనుమతి లేదు."
-)
+_TELUGU_DEVELOPMENT_ONLY = "ఇది వైద్యపరంగా ఆమోదించని అభివృద్ధి నమూనా మాత్రమే; నిజమైన వినియోగానికి అనుమతి లేదు."
 
 
 def build_development_candidates(
