@@ -65,7 +65,9 @@ def confirmed_attachment(text: str = "Synthetic confirmed report text") -> Attac
     )
 
 
-def approved_chunk(content: str = "Synthetic approved pregnancy guidance") -> ApprovedKnowledgeChunk:
+def approved_chunk(
+    content: str = "Synthetic approved pregnancy guidance",
+) -> ApprovedKnowledgeChunk:
     return ApprovedKnowledgeChunk(
         chunk_id="SYNTHETIC-KNOWLEDGE-1",
         source_title="Synthetic clinician-reviewed source",
@@ -173,7 +175,10 @@ def test_report_explanation_requires_explicit_confirmed_attachment() -> None:
     with_selection = ContextAssembler().assemble(
         ContextAssemblyInput(
             **base,
-            requested_attachment_ids=[selected_report.attachment_id, unconfirmed_report.attachment_id],
+            requested_attachment_ids=[
+                selected_report.attachment_id,
+                unconfirmed_report.attachment_id,
+            ],
         ),
         routine_safety_decision(),
     )
