@@ -2,10 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current progress: 7%
+## Current progress: 8%
 
 Updated: 2026-08-03
 Branch: `phase-0-1/foundation`
+Latest verified commit: `8c78ccc`
+Draft PR: `#1`
 
 ## Completed
 
@@ -21,6 +23,11 @@ Branch: `phase-0-1/foundation`
 - [x] Mock LLM provider created; no paid API required.
 - [x] Pytest, Ruff, Docker, and GitHub Actions foundations created.
 - [x] Initial Supabase migration for rule versions and audit events created.
+- [x] CI lint failures identified and corrected.
+- [x] Ruff lint and formatting checks passed.
+- [x] Safety-module coverage gate of at least 90% passed.
+- [x] Full automated test suite passed.
+- [x] Production-style Docker image build passed.
 
 ## Current limitations
 
@@ -29,15 +36,16 @@ Branch: `phase-0-1/foundation`
 - No hosted LLM is connected.
 - No RAG or clinical knowledge ingestion is implemented.
 - No authentication, consent workflow, or complete RLS model is implemented.
+- Safety audit events are modelled in SQL but are not yet persisted by the API.
 - The service is not deployable for clinical use.
 
 ## Next milestone: 10%
 
-- Run CI and fix all lint/test failures.
 - Add request-level audit event persistence interface.
 - Add clinical rule sign-off workflow models.
 - Add explicit production startup guard when no approved ruleset exists.
-- Add architecture and threat-model documentation.
+- Add architecture threat model and data-flow documentation.
+- Add configuration and mock-provider tests.
 
 ## Roadmap allocation
 
@@ -58,6 +66,10 @@ Branch: `phase-0-1/foundation`
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-03 — 8%
+
+Corrected FastAPI dependency-injection linting and test formatting. GitHub Actions completed successfully: Ruff lint, Ruff format, the safety coverage gate, the full test suite, and the Docker build all passed.
 
 ### 2026-08-03 — 7%
 
