@@ -1,8 +1,6 @@
 from pathlib import Path
 
-MIGRATION = Path(
-    "supabase/migrations/20260804120500_tighten_clinical_release_approvals.sql"
-)
+MIGRATION = Path("supabase/migrations/20260804120500_tighten_clinical_release_approvals.sql")
 
 
 def test_each_release_approval_revalidates_identity_digest_role_and_credentials() -> None:
