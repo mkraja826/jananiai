@@ -2,7 +2,6 @@ import datetime as dt
 
 from . import governance, rules
 
-
 _REQUIRED_FIELDS = {
     "DEV-SEIZURE-001": ("seizure",),
     "DEV-LOSS-CONSCIOUSNESS-001": ("loss_of_consciousness",),
