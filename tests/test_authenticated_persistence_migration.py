@@ -1,8 +1,6 @@
 from pathlib import Path
 
-MIGRATION = Path(
-    "supabase/migrations/20260804113000_authenticated_persistence.sql"
-)
+MIGRATION = Path("supabase/migrations/20260804113000_authenticated_persistence.sql")
 
 
 def migration_text() -> str:
