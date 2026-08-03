@@ -69,8 +69,7 @@ class ClinicalReviewer(FrozenModel):
 
     def is_eligible_at(self, checked_at: datetime) -> bool:
         return (
-            self.active
-            and self.credential_verified_at <= checked_at < self.credential_expires_at
+            self.active and self.credential_verified_at <= checked_at < self.credential_expires_at
         )
 
 
@@ -93,10 +92,7 @@ class ClinicalSource(FrozenModel):
         return self
 
     def is_approval_eligible_at(self, checked_at: datetime) -> bool:
-        return (
-            not self.development_placeholder
-            and self.reviewed_at <= checked_at < self.expires_at
-        )
+        return not self.development_placeholder and self.reviewed_at <= checked_at < self.expires_at
 
 
 class RuleApplicability(FrozenModel):
@@ -123,9 +119,7 @@ class RuleApplicability(FrozenModel):
 
     def missing_fields(self, payload: SymptomAssessmentRequest) -> tuple[str, ...]:
         return tuple(
-            field
-            for field in self.required_structured_fields
-            if getattr(payload, field) is None
+            field for field in self.required_structured_fields if getattr(payload, field) is None
         )
 
     def applies_to(self, payload: SymptomAssessmentRequest) -> bool:
@@ -246,9 +240,7 @@ class SafetyGovernanceEvent(FrozenModel):
 
 
 class SafetyGovernanceService:
-    required_approval_roles = frozenset(
-        {ReviewerRole.OBSTETRICIAN, ReviewerRole.CLINICAL_SAFETY}
-    )
+    required_approval_roles = frozenset({ReviewerRole.OBSTETRICIAN, ReviewerRole.CLINICAL_SAFETY})
 
     def record_review(
         self,
@@ -324,8 +316,7 @@ class SafetyGovernanceService:
         activation_time = activates_at or checked_at
         source_deadline = min(source.expires_at for source in candidate.sources)
         credential_deadline = min(
-            reviewer_by_id[reviewer_id].credential_expires_at
-            for reviewer_id in distinct_reviewers
+            reviewer_by_id[reviewer_id].credential_expires_at for reviewer_id in distinct_reviewers
         )
         maximum_expiry = min(source_deadline, credential_deadline)
         requested_expiry = expires_at or min(checked_at + timedelta(days=90), maximum_expiry)
