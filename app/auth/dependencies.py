@@ -17,15 +17,15 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @lru_cache
-def get_auth_verifier() -> SupabaseAuthVerifier | None:
-    settings = get_settings()
-    if not settings.supabase_configured:
-        return None
-    assert settings.supabase_publishable_key is not None
+def get_auth_verifier(
+    supabase_url: str,
+    publishable_key: str,
+    timeout_seconds: float,
+) -> SupabaseAuthVerifier:
     return SupabaseAuthVerifier(
-        supabase_url=settings.normalized_supabase_url,
-        publishable_key=settings.supabase_publishable_key.get_secret_value(),
-        timeout_seconds=settings.supabase_request_timeout_seconds,
+        supabase_url=supabase_url,
+        publishable_key=publishable_key,
+        timeout_seconds=timeout_seconds,
     )
 
 
@@ -47,12 +47,18 @@ async def get_current_user(
             synthetic=True,
         )
 
-    verifier = get_auth_verifier()
-    if verifier is None:
+    if not settings.supabase_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Supabase authentication is not configured",
         )
+
+    assert settings.supabase_publishable_key is not None
+    verifier = get_auth_verifier(
+        settings.normalized_supabase_url,
+        settings.supabase_publishable_key.get_secret_value(),
+        settings.supabase_request_timeout_seconds,
+    )
 
     try:
         return await verifier.verify(credentials.credentials)
