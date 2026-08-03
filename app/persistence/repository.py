@@ -25,7 +25,11 @@ from app.domain import (
     UserHealthProfile,
 )
 from app.persistence.client import SupabaseUserRestClient
-from app.persistence.models import AccountDeletionRequest, DeletionRequestStatus, StoredContextRequest
+from app.persistence.models import (
+    AccountDeletionRequest,
+    DeletionRequestStatus,
+    StoredContextRequest,
+)
 
 
 class UserContextRepository(Protocol):
@@ -53,6 +57,10 @@ class UserContextRepository(Protocol):
         """Persist a privacy-minimised context-selection event."""
         ...
 
+    async def request_account_deletion(self) -> AccountDeletionRequest:
+        """Create or return the caller's deletion workflow record."""
+        ...
+
 
 class SupabaseUserContextRepository:
     """Loads and writes user-owned records through PostgREST and database RPCs."""
@@ -65,8 +73,7 @@ class SupabaseUserContextRepository:
         user: AuthenticatedUser,
         request: StoredContextRequest,
     ) -> ContextAssemblyInput:
-        if user.user_id != self._client.user.user_id:
-            raise ValueError("Repository identity does not match the authenticated user")
+        self._ensure_identity(user)
 
         profile_rows, pregnancy_rows, consent_rows = await asyncio.gather(
             self._client.select(
@@ -101,7 +108,11 @@ class SupabaseUserContextRepository:
         medication_rows, appointment_rows, attachment_rows = await asyncio.gather(
             self._load_medications(user.user_id, pregnancy_id),
             self._load_appointments(user.user_id, pregnancy_id),
-            self._load_attachments(user.user_id, pregnancy_id, request.requested_attachment_ids),
+            self._load_attachments(
+                user.user_id,
+                pregnancy_id,
+                request.requested_attachment_ids,
+            ),
         )
         attachments = await self._map_attachments(attachment_rows, request.is_synthetic)
 
@@ -140,6 +151,7 @@ class SupabaseUserContextRepository:
         user: AuthenticatedUser,
         event: ConsentEvent,
     ) -> ConsentEvent:
+        self._ensure_identity(user)
         rows = await self._client.insert(
             "consent_events",
             {
@@ -159,6 +171,7 @@ class SupabaseUserContextRepository:
         user: AuthenticatedUser,
         event: SafetyAuditEvent,
     ) -> None:
+        self._ensure_identity(user)
         await self._client.rpc(
             "record_janani_safety_event",
             {
@@ -176,6 +189,7 @@ class SupabaseUserContextRepository:
         user: AuthenticatedUser,
         event: ContextAssemblyAuditEvent,
     ) -> None:
+        self._ensure_identity(user)
         await self._client.rpc(
             "record_janani_context_event",
             {
@@ -183,11 +197,15 @@ class SupabaseUserContextRepository:
                 "p_task": event.task,
                 "p_status": event.status,
                 "p_safety_event_id": str(event.safety_event_id),
-                "p_selected_medication_ids": [str(item) for item in event.selected_medication_ids],
+                "p_selected_medication_ids": [
+                    str(item) for item in event.selected_medication_ids
+                ],
                 "p_selected_appointment_ids": [
                     str(item) for item in event.selected_appointment_ids
                 ],
-                "p_selected_attachment_ids": [str(item) for item in event.selected_attachment_ids],
+                "p_selected_attachment_ids": [
+                    str(item) for item in event.selected_attachment_ids
+                ],
                 "p_selected_knowledge_ids": event.selected_knowledge_ids,
                 "p_excluded_item_count": event.excluded_item_count,
                 "p_schema_version": event.schema_version,
@@ -374,3 +392,7 @@ class SupabaseUserContextRepository:
             notes=row.get("notes"),
             synthetic=synthetic,
         )
+
+    def _ensure_identity(self, user: AuthenticatedUser) -> None:
+        if user.user_id != self._client.user.user_id:
+            raise ValueError("Repository identity does not match the authenticated user")
