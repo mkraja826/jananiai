@@ -90,9 +90,7 @@ def candidate(
                 "Synthetic escalation wording for engineering tests; contact a qualified "
                 "healthcare professional."
             ),
-            telugu=(
-                "ఇది కేవలం ఇంజినీరింగ్ పరీక్ష కోసం రూపొందించిన నమూనా హెచ్చరిక సందేశం మాత్రమే."
-            ),
+            telugu=("ఇది కేవలం ఇంజినీరింగ్ పరీక్ష కోసం రూపొందించిన నమూనా హెచ్చరిక సందేశం మాత్రమే."),
         ),
         sources=source_items or (source(),),
         created_at=NOW - timedelta(days=1),
@@ -253,9 +251,7 @@ def test_reviewer_source_applicability_and_candidate_validation() -> None:
     with pytest.raises(ValidationError, match="Unknown structured"):
         RuleApplicability(required_structured_fields=("free_text_diagnosis",))
     with pytest.raises(ValidationError, match="unique"):
-        RuleApplicability(
-            required_structured_fields=("gestational_week", "gestational_week")
-        )
+        RuleApplicability(required_structured_fields=("gestational_week", "gestational_week"))
 
     approved_payload = candidate().model_dump()
     approved_payload["status"] = RuleStatus.APPROVED
@@ -294,9 +290,7 @@ def test_review_and_release_model_validation() -> None:
         )
     duplicate_reviewer = uuid4()
     with pytest.raises(ValidationError, match="distinct reviewers"):
-        SafetyRuleRelease(
-            **release_payload(reviewer_ids=(duplicate_reviewer, duplicate_reviewer))
-        )
+        SafetyRuleRelease(**release_payload(reviewer_ids=(duplicate_reviewer, duplicate_reviewer)))
 
 
 def test_record_review_rejects_invalid_state_or_credentials() -> None:
