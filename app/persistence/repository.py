@@ -123,9 +123,7 @@ class SupabaseUserContextRepository:
             user_question=request.user_question,
             consents=self._map_consents(consent_rows, request.is_synthetic),
             profile=(
-                self._map_profile(profile_rows[0], request.is_synthetic)
-                if profile_rows
-                else None
+                self._map_profile(profile_rows[0], request.is_synthetic) if profile_rows else None
             ),
             pregnancy=(
                 self._map_pregnancy(pregnancy_rows[0], request.is_synthetic)
@@ -197,15 +195,11 @@ class SupabaseUserContextRepository:
                 "p_task": event.task,
                 "p_status": event.status,
                 "p_safety_event_id": str(event.safety_event_id),
-                "p_selected_medication_ids": [
-                    str(item) for item in event.selected_medication_ids
-                ],
+                "p_selected_medication_ids": [str(item) for item in event.selected_medication_ids],
                 "p_selected_appointment_ids": [
                     str(item) for item in event.selected_appointment_ids
                 ],
-                "p_selected_attachment_ids": [
-                    str(item) for item in event.selected_attachment_ids
-                ],
+                "p_selected_attachment_ids": [str(item) for item in event.selected_attachment_ids],
                 "p_selected_knowledge_ids": event.selected_knowledge_ids,
                 "p_excluded_item_count": event.excluded_item_count,
                 "p_schema_version": event.schema_version,
