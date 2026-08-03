@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app import __version__
+from app.audit import AuditRecorder, InMemoryAuditRecorder, SafetyAuditEvent
 from app.config import Settings, get_settings
 from app.safety.engine import SafetyEngine
 from app.safety.models import ReadinessResponse, SafetyDecision, SymptomAssessmentRequest
@@ -22,8 +23,14 @@ def get_safety_engine() -> SafetyEngine:
     )
 
 
+@lru_cache
+def get_audit_recorder() -> InMemoryAuditRecorder:
+    return InMemoryAuditRecorder()
+
+
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 SafetyEngineDependency = Annotated[SafetyEngine, Depends(get_safety_engine)]
+AuditRecorderDependency = Annotated[AuditRecorder, Depends(get_audit_recorder)]
 
 
 @router.get("/health")
@@ -56,10 +63,16 @@ def evaluate_safety(
     payload: SymptomAssessmentRequest,
     settings: SettingsDependency,
     engine: SafetyEngineDependency,
+    audit_recorder: AuditRecorderDependency,
 ) -> SafetyDecision:
     if settings.free_first_mode and not payload.is_synthetic:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Real patient data is prohibited in free-first mode",
         )
-    return engine.evaluate(payload)
+
+    decision = engine.evaluate(payload)
+    audit_recorder.record_safety_event(
+        SafetyAuditEvent.from_decision(decision, synthetic=payload.is_synthetic)
+    )
+    return decision
