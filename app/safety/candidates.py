@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from app.safety import governance, rules
+from . import governance, rules
 
 
 _REQUIRED_FIELDS = {
