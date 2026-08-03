@@ -1,7 +1,6 @@
-from datetime import UTC, datetime, timedelta
+import datetime as dt
 
-from . import governance
-from . import rules
+from . import governance, rules
 
 
 _REQUIRED_FIELDS = {
@@ -21,11 +20,11 @@ _TELUGU_DEVELOPMENT_ONLY = (
 
 def build_development_candidates(
     *,
-    created_at: datetime | None = None,
+    created_at: dt.datetime | None = None,
 ) -> tuple[governance.SafetyRuleCandidate, ...]:
     """Create review candidates that remain unapprovable until real sources replace placeholders."""
 
-    now = created_at or datetime.now(UTC)
+    now = created_at or dt.datetime.now(dt.UTC)
     placeholder_source = governance.ClinicalSource(
         source_id="DEVELOPMENT-SOURCE-REQUIRED",
         title="Clinician-reviewed source required before approval",
@@ -33,7 +32,7 @@ def build_development_candidates(
         reference="development-only://replace-with-reviewed-source",
         section="No clinical source has been approved",
         reviewed_at=now,
-        expires_at=now + timedelta(days=30),
+        expires_at=now + dt.timedelta(days=30),
         development_placeholder=True,
     )
 
