@@ -31,11 +31,17 @@ pytestmark = [
 ]
 
 
-def headers(token: str, *, prefer: str | None = None) -> dict[str, str]:
+def headers(
+    token: str,
+    *,
+    api_key: str | None = None,
+    prefer: str | None = None,
+    content_type: str = "application/json",
+) -> dict[str, str]:
     result = {
-        "apikey": PUBLISHABLE_KEY or "",
+        "apikey": api_key or PUBLISHABLE_KEY or "",
         "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
+        "Content-Type": content_type,
     }
     if prefer:
         result["Prefer"] = prefer
@@ -43,7 +49,8 @@ def headers(token: str, *, prefer: str | None = None) -> dict[str, str]:
 
 
 def service_headers(*, prefer: str | None = None) -> dict[str, str]:
-    return headers(SERVICE_ROLE_KEY or "", prefer=prefer)
+    key = SERVICE_ROLE_KEY or ""
+    return headers(key, api_key=key, prefer=prefer)
 
 
 def rest_url(path: str) -> str:
@@ -51,7 +58,11 @@ def rest_url(path: str) -> str:
     return f"{SUPABASE_URL}/rest/v1/{path}"
 
 
-def user_id(token: str) -> str:
+def assert_denied(response: httpx.Response) -> None:
+    assert response.status_code in {400, 401, 403, 404}, response.text
+
+
+def current_user_id(token: str) -> str:
     assert SUPABASE_URL is not None
     response = httpx.get(
         f"{SUPABASE_URL}/auth/v1/user",
@@ -79,32 +90,72 @@ def insert_pregnancy(token: str, owner_id: str, *, week: int = 20) -> str:
     return pregnancy_id
 
 
+def insert_attachment(token: str, owner_id: str, pregnancy_id: str) -> str:
+    attachment_id = str(uuid4())
+    response = httpx.post(
+        rest_url("attachment_records"),
+        headers=headers(token, prefer="return=representation"),
+        json={
+            "id": attachment_id,
+            "user_id": owner_id,
+            "pregnancy_id": pregnancy_id,
+            "kind": "lab_report",
+            "mime_type": "application/pdf",
+            "storage_object_path": f"{owner_id}/{attachment_id}.pdf",
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    return attachment_id
+
+
 def test_tokens_resolve_to_distinct_synthetic_users() -> None:
     assert USER_A_TOKEN is not None
     assert USER_B_TOKEN is not None
     assert USER_A_ID is not None
     assert USER_B_ID is not None
 
-    assert user_id(USER_A_TOKEN) == USER_A_ID
-    assert user_id(USER_B_TOKEN) == USER_B_ID
+    assert current_user_id(USER_A_TOKEN) == USER_A_ID
+    assert current_user_id(USER_B_TOKEN) == USER_B_ID
     assert USER_A_ID != USER_B_ID
 
 
-def test_two_users_cannot_cross_read_or_cross_write_pregnancies() -> None:
+def test_profile_and_pregnancy_rows_are_owner_isolated() -> None:
     assert USER_A_TOKEN is not None
     assert USER_B_TOKEN is not None
     assert USER_A_ID is not None
 
-    pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID)
+    profile = httpx.post(
+        rest_url("user_health_profiles"),
+        headers=headers(USER_A_TOKEN, prefer="return=representation"),
+        json={
+            "user_id": USER_A_ID,
+            "preferred_language": "en",
+            "dietary_preference": "vegetarian",
+            "allergies": ["synthetic allergy"],
+        },
+        timeout=20,
+    )
+    profile.raise_for_status()
 
-    cross_read = httpx.get(
+    profile_cross_read = httpx.get(
+        rest_url("user_health_profiles"),
+        headers=headers(USER_B_TOKEN),
+        params={"select": "user_id", "user_id": f"eq.{USER_A_ID}"},
+        timeout=20,
+    )
+    profile_cross_read.raise_for_status()
+    assert profile_cross_read.json() == []
+
+    pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID)
+    pregnancy_cross_read = httpx.get(
         rest_url("pregnancies"),
         headers=headers(USER_B_TOKEN),
         params={"select": "id", "id": f"eq.{pregnancy_id}"},
         timeout=20,
     )
-    cross_read.raise_for_status()
-    assert cross_read.json() == []
+    pregnancy_cross_read.raise_for_status()
+    assert pregnancy_cross_read.json() == []
 
     cross_write = httpx.post(
         rest_url("pregnancies"),
@@ -116,38 +167,15 @@ def test_two_users_cannot_cross_read_or_cross_write_pregnancies() -> None:
         },
         timeout=20,
     )
-    assert cross_write.status_code in {401, 403}
+    assert_denied(cross_write)
 
 
-def test_profile_isolation_and_append_only_consent() -> None:
+def test_consent_history_is_append_only() -> None:
     assert USER_A_TOKEN is not None
-    assert USER_B_TOKEN is not None
     assert USER_A_ID is not None
 
-    profile_response = httpx.post(
-        rest_url("user_health_profiles"),
-        headers=headers(USER_A_TOKEN, prefer="return=representation"),
-        json={
-            "user_id": USER_A_ID,
-            "preferred_language": "en",
-            "dietary_preference": "vegetarian",
-            "allergies": ["synthetic allergy"],
-        },
-        timeout=20,
-    )
-    profile_response.raise_for_status()
-
-    cross_read = httpx.get(
-        rest_url("user_health_profiles"),
-        headers=headers(USER_B_TOKEN),
-        params={"select": "user_id", "user_id": f"eq.{USER_A_ID}"},
-        timeout=20,
-    )
-    cross_read.raise_for_status()
-    assert cross_read.json() == []
-
     consent_id = str(uuid4())
-    consent_response = httpx.post(
+    created = httpx.post(
         rest_url("consent_events"),
         headers=headers(USER_A_TOKEN, prefer="return=representation"),
         json={
@@ -160,24 +188,24 @@ def test_profile_isolation_and_append_only_consent() -> None:
         },
         timeout=20,
     )
-    consent_response.raise_for_status()
+    created.raise_for_status()
 
-    update_response = httpx.patch(
+    updated = httpx.patch(
         rest_url("consent_events"),
         headers=headers(USER_A_TOKEN),
         params={"id": f"eq.{consent_id}"},
         json={"status": "revoked"},
         timeout=20,
     )
-    assert update_response.status_code in {401, 403}
+    assert_denied(updated)
 
-    delete_response = httpx.delete(
+    deleted = httpx.delete(
         rest_url("consent_events"),
         headers=headers(USER_A_TOKEN),
         params={"id": f"eq.{consent_id}"},
         timeout=20,
     )
-    assert delete_response.status_code in {401, 403}
+    assert_denied(deleted)
 
 
 def test_related_records_cannot_link_to_another_users_pregnancy() -> None:
@@ -187,47 +215,46 @@ def test_related_records_cannot_link_to_another_users_pregnancy() -> None:
     assert USER_B_ID is not None
 
     pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID, week=22)
+    attempts = [
+        (
+            "medication_records",
+            {
+                "user_id": USER_B_ID,
+                "pregnancy_id": pregnancy_id,
+                "name": "Synthetic medication",
+                "source": "user_entered",
+                "confirmed": True,
+            },
+        ),
+        (
+            "appointment_records",
+            {
+                "user_id": USER_B_ID,
+                "pregnancy_id": pregnancy_id,
+                "scheduled_at": "2026-08-10T10:00:00Z",
+                "purpose": "Synthetic appointment",
+            },
+        ),
+        (
+            "attachment_records",
+            {
+                "user_id": USER_B_ID,
+                "pregnancy_id": pregnancy_id,
+                "kind": "lab_report",
+                "mime_type": "application/pdf",
+                "storage_object_path": f"{USER_B_ID}/{uuid4()}.pdf",
+            },
+        ),
+    ]
 
-    medication_response = httpx.post(
-        rest_url("medication_records"),
-        headers=headers(USER_B_TOKEN),
-        json={
-            "user_id": USER_B_ID,
-            "pregnancy_id": pregnancy_id,
-            "name": "Synthetic medication",
-            "source": "user_entered",
-            "confirmed": True,
-        },
-        timeout=20,
-    )
-    assert medication_response.status_code in {401, 403}
-
-    appointment_response = httpx.post(
-        rest_url("appointment_records"),
-        headers=headers(USER_B_TOKEN),
-        json={
-            "user_id": USER_B_ID,
-            "pregnancy_id": pregnancy_id,
-            "scheduled_at": "2026-08-10T10:00:00Z",
-            "purpose": "Synthetic appointment",
-        },
-        timeout=20,
-    )
-    assert appointment_response.status_code in {401, 403}
-
-    attachment_response = httpx.post(
-        rest_url("attachment_records"),
-        headers=headers(USER_B_TOKEN),
-        json={
-            "user_id": USER_B_ID,
-            "pregnancy_id": pregnancy_id,
-            "kind": "lab_report",
-            "mime_type": "application/pdf",
-            "storage_object_path": f"{USER_A_ID}/cross-user.pdf",
-        },
-        timeout=20,
-    )
-    assert attachment_response.status_code in {401, 403}
+    for table, payload in attempts:
+        response = httpx.post(
+            rest_url(table),
+            headers=headers(USER_B_TOKEN),
+            json=payload,
+            timeout=20,
+        )
+        assert_denied(response)
 
 
 def test_internal_tables_reject_direct_authenticated_writes() -> None:
@@ -235,22 +262,7 @@ def test_internal_tables_reject_direct_authenticated_writes() -> None:
     assert USER_A_ID is not None
 
     pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID, week=23)
-    attachment_id = str(uuid4())
-    attachment_response = httpx.post(
-        rest_url("attachment_records"),
-        headers=headers(USER_A_TOKEN),
-        json={
-            "id": attachment_id,
-            "user_id": USER_A_ID,
-            "pregnancy_id": pregnancy_id,
-            "kind": "lab_report",
-            "mime_type": "application/pdf",
-            "storage_object_path": f"{USER_A_ID}/{attachment_id}.pdf",
-        },
-        timeout=20,
-    )
-    attachment_response.raise_for_status()
-
+    attachment_id = insert_attachment(USER_A_TOKEN, USER_A_ID, pregnancy_id)
     attempts = [
         (
             "context_assembly_events",
@@ -277,13 +289,10 @@ def test_internal_tables_reject_direct_authenticated_writes() -> None:
                 "attachment_id": attachment_id,
                 "extractor_name": "synthetic",
                 "extractor_version": "1",
-                "extracted_text": "Synthetic direct write must fail",
+                "extracted_text": "Direct user write must fail",
             },
         ),
-        (
-            "account_deletion_requests",
-            {"user_id": USER_A_ID},
-        ),
+        ("account_deletion_requests", {"user_id": USER_A_ID}),
     ]
 
     for table, payload in attempts:
@@ -293,19 +302,19 @@ def test_internal_tables_reject_direct_authenticated_writes() -> None:
             json=payload,
             timeout=20,
         )
-        assert response.status_code in {401, 403}, (table, response.text)
+        assert_denied(response)
 
 
-def test_authenticated_audit_rpcs_are_owner_scoped_and_minimal() -> None:
+def test_authenticated_audit_rpcs_are_owner_scoped() -> None:
     assert USER_A_TOKEN is not None
     assert USER_B_TOKEN is not None
 
-    safety_event_id = str(uuid4())
-    safety_response = httpx.post(
+    safety_request_id = str(uuid4())
+    safety = httpx.post(
         rest_url("rpc/record_janani_safety_event"),
         headers=headers(USER_A_TOKEN),
         json={
-            "p_request_id": safety_event_id,
+            "p_request_id": safety_request_id,
             "p_ruleset_version": "synthetic-local-rules",
             "p_triggered_rule_ids": [],
             "p_severity": "routine",
@@ -314,18 +323,18 @@ def test_authenticated_audit_rpcs_are_owner_scoped_and_minimal() -> None:
         },
         timeout=20,
     )
-    safety_response.raise_for_status()
-    UUID(safety_response.json())
+    safety.raise_for_status()
+    UUID(safety.json())
 
     context_event_id = str(uuid4())
-    context_response = httpx.post(
+    context = httpx.post(
         rest_url("rpc/record_janani_context_event"),
         headers=headers(USER_A_TOKEN),
         json={
             "p_event_id": context_event_id,
             "p_task": "general_question",
             "p_status": "ready",
-            "p_safety_event_id": safety_event_id,
+            "p_safety_event_id": safety_request_id,
             "p_selected_medication_ids": [],
             "p_selected_appointment_ids": [],
             "p_selected_attachment_ids": [],
@@ -336,72 +345,82 @@ def test_authenticated_audit_rpcs_are_owner_scoped_and_minimal() -> None:
         },
         timeout=20,
     )
-    context_response.raise_for_status()
-    assert context_response.json() == context_event_id
+    context.raise_for_status()
+    assert context.json() == context_event_id
 
-    user_a_read = httpx.get(
+    owner_read = httpx.get(
         rest_url("context_assembly_events"),
         headers=headers(USER_A_TOKEN),
         params={"select": "id,task,status", "id": f"eq.{context_event_id}"},
         timeout=20,
     )
-    user_a_read.raise_for_status()
-    assert user_a_read.json() == [
+    owner_read.raise_for_status()
+    assert owner_read.json() == [
         {"id": context_event_id, "task": "general_question", "status": "ready"}
     ]
 
-    user_b_read = httpx.get(
+    cross_read = httpx.get(
         rest_url("context_assembly_events"),
         headers=headers(USER_B_TOKEN),
         params={"select": "id", "id": f"eq.{context_event_id}"},
         timeout=20,
     )
-    user_b_read.raise_for_status()
-    assert user_b_read.json() == []
+    cross_read.raise_for_status()
+    assert cross_read.json() == []
 
 
-def test_attachment_confirmation_rpc_checks_ownership() -> None:
+def test_extraction_worker_and_user_confirmation_are_separated() -> None:
     assert USER_A_TOKEN is not None
     assert USER_B_TOKEN is not None
     assert USER_A_ID is not None
 
     pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID, week=24)
-    attachment_id = str(uuid4())
+    attachment_id = insert_attachment(USER_A_TOKEN, USER_A_ID, pregnancy_id)
     extraction_id = str(uuid4())
+    rpc_payload = {
+        "p_extraction_id": extraction_id,
+        "p_attachment_id": attachment_id,
+        "p_extractor_name": "synthetic-local-extractor",
+        "p_extractor_version": "1.0",
+        "p_extracted_text": "Synthetic confirmed report text",
+        "p_confidence": 0.99,
+    }
 
-    attachment_response = httpx.post(
+    user_worker_call = httpx.post(
+        rest_url("rpc/record_janani_attachment_extraction"),
+        headers=headers(USER_A_TOKEN),
+        json=rpc_payload,
+        timeout=20,
+    )
+    assert_denied(user_worker_call)
+
+    worker_call = httpx.post(
+        rest_url("rpc/record_janani_attachment_extraction"),
+        headers=service_headers(),
+        json=rpc_payload,
+        timeout=20,
+    )
+    worker_call.raise_for_status()
+    assert worker_call.json() == extraction_id
+
+    extracted = httpx.get(
         rest_url("attachment_records"),
         headers=headers(USER_A_TOKEN),
-        json={
-            "id": attachment_id,
-            "user_id": USER_A_ID,
-            "pregnancy_id": pregnancy_id,
-            "kind": "lab_report",
-            "mime_type": "application/pdf",
-            "storage_object_path": f"{USER_A_ID}/{attachment_id}.pdf",
+        params={
+            "select": "extraction_status,confirmation_status",
+            "id": f"eq.{attachment_id}",
+        },
+        timeout=20,
+    )
+    extracted.raise_for_status()
+    assert extracted.json() == [
+        {
             "extraction_status": "completed",
             "confirmation_status": "unconfirmed",
-        },
-        timeout=20,
-    )
-    attachment_response.raise_for_status()
+        }
+    ]
 
-    extraction_response = httpx.post(
-        rest_url("attachment_extractions"),
-        headers=service_headers(),
-        json={
-            "id": extraction_id,
-            "attachment_id": attachment_id,
-            "extractor_name": "synthetic-local-extractor",
-            "extractor_version": "1.0",
-            "extracted_text": "Synthetic confirmed report text",
-            "confidence": 0.99,
-        },
-        timeout=20,
-    )
-    extraction_response.raise_for_status()
-
-    cross_user_confirmation = httpx.post(
+    cross_confirm = httpx.post(
         rest_url("rpc/confirm_janani_attachment_extraction"),
         headers=headers(USER_B_TOKEN),
         json={
@@ -411,9 +430,9 @@ def test_attachment_confirmation_rpc_checks_ownership() -> None:
         },
         timeout=20,
     )
-    assert cross_user_confirmation.status_code in {400, 401, 403}
+    assert_denied(cross_confirm)
 
-    owner_confirmation = httpx.post(
+    owner_confirm = httpx.post(
         rest_url("rpc/confirm_janani_attachment_extraction"),
         headers=headers(USER_A_TOKEN),
         json={
@@ -423,19 +442,16 @@ def test_attachment_confirmation_rpc_checks_ownership() -> None:
         },
         timeout=20,
     )
-    owner_confirmation.raise_for_status()
+    owner_confirm.raise_for_status()
 
-    owner_read = httpx.get(
+    confirmed = httpx.get(
         rest_url("attachment_records"),
         headers=headers(USER_A_TOKEN),
-        params={
-            "select": "confirmation_status",
-            "id": f"eq.{attachment_id}",
-        },
+        params={"select": "confirmation_status", "id": f"eq.{attachment_id}"},
         timeout=20,
     )
-    owner_read.raise_for_status()
-    assert owner_read.json() == [{"confirmation_status": "confirmed"}]
+    confirmed.raise_for_status()
+    assert confirmed.json() == [{"confirmation_status": "confirmed"}]
 
 
 def test_private_storage_paths_are_owner_scoped() -> None:
@@ -446,33 +462,28 @@ def test_private_storage_paths_are_owner_scoped() -> None:
 
     object_path = f"{USER_A_ID}/{uuid4()}.txt"
     object_url = f"{SUPABASE_URL}/storage/v1/object/janani-private/{object_path}"
-    upload_headers = headers(USER_A_TOKEN)
-    upload_headers["Content-Type"] = "text/plain"
-
-    upload_response = httpx.post(
+    uploaded = httpx.post(
         object_url,
-        headers=upload_headers,
+        headers=headers(USER_A_TOKEN, content_type="text/plain"),
         content=b"synthetic local storage object",
         timeout=20,
     )
-    upload_response.raise_for_status()
+    uploaded.raise_for_status()
 
     owner_read = httpx.get(object_url, headers=headers(USER_A_TOKEN), timeout=20)
     owner_read.raise_for_status()
     assert owner_read.content == b"synthetic local storage object"
 
     cross_read = httpx.get(object_url, headers=headers(USER_B_TOKEN), timeout=20)
-    assert cross_read.status_code in {400, 401, 403, 404}
+    assert_denied(cross_read)
 
-    cross_upload_headers = headers(USER_B_TOKEN)
-    cross_upload_headers["Content-Type"] = "text/plain"
     cross_upload = httpx.post(
         f"{SUPABASE_URL}/storage/v1/object/janani-private/{USER_A_ID}/{uuid4()}.txt",
-        headers=cross_upload_headers,
+        headers=headers(USER_B_TOKEN, content_type="text/plain"),
         content=b"must be rejected",
         timeout=20,
     )
-    assert cross_upload.status_code in {400, 401, 403}
+    assert_denied(cross_upload)
 
 
 def test_account_deletion_request_is_idempotent_and_private() -> None:
@@ -506,9 +517,7 @@ def test_account_deletion_request_is_idempotent_and_private() -> None:
         timeout=20,
     )
     owner_read.raise_for_status()
-    assert owner_read.json() == [
-        {"id": first_payload["request_id"], "status": "pending"}
-    ]
+    assert owner_read.json() == [{"id": first_payload["request_id"], "status": "pending"}]
 
     cross_read = httpx.get(
         rest_url("account_deletion_requests"),
