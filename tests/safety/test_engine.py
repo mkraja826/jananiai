@@ -9,7 +9,7 @@ from app.safety.models import (
     SafetySeverity,
     SymptomAssessmentRequest,
 )
-from app.safety.rules import SafetyRule, build_development_rules
+from app.safety.rules import build_development_rules
 
 
 @pytest.mark.parametrize(
