@@ -19,11 +19,8 @@ jobs:
           cache: pip
       - name: Install
         run: pip install -e ".[dev]"
-      - name: Ruff autofix diagnostic
-        run: |
-          ruff check . --fix
-          git diff -- app/safety/candidates.py
-          git diff --exit-code
+      - name: Ruff lint
+        run: ruff check .
       - name: Ruff format
         run: ruff format --check .
       - name: Safety coverage gate
