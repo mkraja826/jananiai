@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from app.safety import governance
-from app.safety.rules import build_development_rules
+from app.safety import governance, rules
 
 
 _REQUIRED_FIELDS = {
@@ -38,7 +37,7 @@ def build_development_candidates(
     )
 
     candidates: list[governance.SafetyRuleCandidate] = []
-    for rule in build_development_rules():
+    for rule in rules.build_development_rules():
         candidates.append(
             governance.SafetyRuleCandidate(
                 rule_id=rule.metadata.rule_id,
