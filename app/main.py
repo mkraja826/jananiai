@@ -1,14 +1,30 @@
 from fastapi import FastAPI
 
 from app import __version__
-from app.api.routes import router
-from app.config import get_settings
+from app.api.routes import get_safety_engine, router
+from app.config import Settings, get_settings
+from app.safety.engine import SafetyEngine
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def validate_runtime_readiness(settings: Settings, engine: SafetyEngine) -> None:
+    """Block production startup unless a clinician-approved safety ruleset is active."""
+
+    if settings.environment == "production" and not engine.clinical_ready:
+        raise RuntimeError(
+            "Production startup blocked: no current clinician-approved safety ruleset is active"
+        )
+
+
+def create_app(
+    settings: Settings | None = None,
+    safety_engine: SafetyEngine | None = None,
+) -> FastAPI:
+    runtime_settings = settings or get_settings()
+    runtime_engine = safety_engine or get_safety_engine()
+    validate_runtime_readiness(runtime_settings, runtime_engine)
+
     application = FastAPI(
-        title=settings.app_name,
+        title=runtime_settings.app_name,
         version=__version__,
         description=(
             "Safety-first Janani AI backend. Development builds accept synthetic data only "
