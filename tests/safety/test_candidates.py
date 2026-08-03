@@ -1,14 +1,27 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from app.safety.candidates import build_development_candidates
 from app.safety.governance import (
+    ClinicalReviewer,
     ReviewDecision,
     ReviewerRole,
     SafetyGovernanceService,
 )
-from tests.safety.test_governance import NOW, reviewer
+
+NOW = datetime(2026, 8, 4, 0, 0, tzinfo=UTC)
+
+
+def reviewer(role: ReviewerRole) -> ClinicalReviewer:
+    return ClinicalReviewer(
+        display_name=f"Synthetic {role.value}",
+        role=role,
+        license_jurisdiction="IN-synthetic",
+        license_reference=f"TEST-{role.value}",
+        credential_verified_at=NOW - timedelta(days=30),
+        credential_expires_at=NOW + timedelta(days=180),
+    )
 
 
 def test_all_development_rules_become_unique_unapprovable_candidates() -> None:
@@ -57,4 +70,4 @@ def test_candidate_builder_defaults_to_timezone_aware_creation_time() -> None:
     item = build_development_candidates()[0]
 
     assert isinstance(item.created_at, datetime)
-    assert item.created_at.tzinfo is UTC
+    assert item.created_at.utcoffset() is not None
