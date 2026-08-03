@@ -2,12 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 10%
+## Current verified progress: 14%
 
 Updated: 2026-08-04
-Branch: `phase-0-1/foundation`
-Latest verified implementation commit: `5c283d5`
-Draft PR: `#1`
+Branch: `phase-2/data-context-foundation`
+Latest verified implementation commit: `8686255`
+Draft PR: `#2`
 
 ## Foundation completed and verified
 
@@ -25,59 +25,70 @@ Draft PR: `#1`
 - [x] Safety API records minimal audit events without raw notes or symptom fields.
 - [x] Clinician approval metadata requires sign-off, approval time, and review deadline.
 - [x] Production startup blocks when no current approved ruleset is active.
-- [x] Configuration, mock-provider, audit, startup, API, and safety tests created.
 - [x] Pytest, Ruff, Docker, and GitHub Actions foundations created.
-- [x] Initial Supabase migration for rule versions and audit events created with RLS enabled.
 - [x] Foundation architecture, ADRs, threat model, and permanent progress tracker created.
-- [x] Full CI passed on `5c283d5`: Ruff lint, Ruff format, safety coverage gate, full tests, and Docker build.
 
-## Architecture direction accepted on 2026-08-04
+## Phase 2 data and context foundation completed and verified
 
-- [x] Janani's core intelligence is a Context Assembly Engine rather than a newly trained general-purpose LLM.
-- [x] User data will be selected according to the current task; complete history will not be sent by default.
-- [x] Attachments will be privately stored, extracted, confidence-checked, and confirmed before relevant content is included.
-- [x] One typed request will combine the task, relevant confirmed records, selected attachment text/references, approved RAG knowledge, response policy, language, and token budget.
-- [x] The first planned hosted provider is Gemini through the provider-independent adapter.
-- [x] Synthetic integration target recorded as stable model configuration `gemini-3.5-flash`.
-- [x] The deterministic mock provider remains the default for automated and local tests.
-- [x] Unpaid hosted-model use remains synthetic-data-only.
-- [x] Provider output must pass Pydantic, policy, citation, and audit validation before reaching users.
-- [x] Updated roadmap, ADR 0002, architecture flow, README, and draft PR description committed.
+- [x] Added privacy-minimised user health, pregnancy, medication, and appointment models.
+- [x] Excluded direct identifiers from AI context-domain models.
+- [x] Added append-only consent events with grant and revocation resolution by purpose.
+- [x] Separated care support, AI processing, attachment processing, model improvement, and research consent.
+- [x] Added attachment type, extraction state, confidence, and user-confirmation contracts.
+- [x] Blocked attachment text from AI context until extraction is complete and user-confirmed.
+- [x] Added task-specific context inclusion and exclusion policies.
+- [x] Implemented the deterministic Context Assembly Engine using synthetic records.
+- [x] Added safety-first blocking before any LLM request can be assembled.
+- [x] Added explicit attachment selection for report explanations.
+- [x] Added active and confirmed medication filtering.
+- [x] Added approved and review-valid knowledge filtering.
+- [x] Added context-size budgeting and optional-context trimming.
+- [x] Added versioned, provider-neutral `JananiLLMRequest` schema.
+- [x] Added `POST /v1/context/assemble` synthetic-only API endpoint.
+- [x] Added privacy-minimised context audit events containing IDs and decisions only.
+- [x] Added Supabase schema for profiles, pregnancies, consent, medication, appointments, attachments, extraction versions, and context audits.
+- [x] Added owner-scoped RLS policies and private storage policies.
+- [x] Added database triggers preventing records from being linked to another user's pregnancy.
+- [x] Added tests for consent revocation, data confirmation, task relevance, safety blocking, budgets, API behavior, and audit minimisation.
+- [x] GitHub Actions passed on `8686255`: Ruff lint, Ruff formatting, 92.50% safety coverage, 40 tests, and Docker build.
 
 ## Current limitations
 
 - Draft warning rules have not been reviewed or approved by a licensed clinician.
 - No real patient data may be processed.
-- No Gemini adapter or hosted LLM is connected yet.
-- No Context Assembly Engine is implemented yet.
-- No attachment extraction/confirmation pipeline is implemented.
-- No approved RAG or clinical knowledge ingestion is implemented.
-- No authentication, consent workflow, or complete user/caregiver RLS model is implemented.
-- The in-memory audit recorder is development-only; durable database persistence is not implemented.
+- No Gemini adapter or hosted LLM is connected.
+- No hosted-model response schema or output-policy validator is implemented yet.
+- Supabase migrations have not been executed against a staging project.
+- RLS policies have not been integration-tested against authenticated staging users.
+- FastAPI does not yet verify Supabase access tokens or propagate authenticated user identity.
+- Consent, record, attachment, safety-audit, and context-audit repositories are not durably connected to Supabase.
+- No OCR or attachment extraction service is implemented.
+- No approved clinical-content ingestion, embeddings, or RAG retrieval is implemented.
+- No caregiver sharing or permissions model is implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: 18% — data, consent, privacy, and RLS
+## Next milestone: 18% — authenticated persistence and staging RLS validation
 
-- Design authenticated user, pregnancy, caregiver, consent, and deletion schemas.
-- Add Supabase migrations with strict row-level security.
-- Define consent versions for care, AI processing, model improvement, and research separately.
-- Define structured pregnancy, medication, appointment, symptom, report, and attachment records.
-- Define attachment metadata, extraction confidence, and confirmation states.
-- Add durable privacy-minimised safety audit persistence.
-- Add data-retention and deletion workflows.
-- Add automated cross-user and caregiver-permission isolation tests.
-- Keep all test fixtures synthetic.
+- Add Supabase access-token verification to FastAPI.
+- Propagate authenticated user identity through protected service calls.
+- Implement durable repositories for consent, pregnancy, medication, appointments, attachments, and audits.
+- Execute migrations against a separate staging Supabase project.
+- Add automated two-user isolation tests for every user-owned table and private storage path.
+- Validate append-only consent behavior and consent revocation in staging.
+- Validate that backend-only extraction and context-audit tables reject direct client writes.
+- Add attachment extraction state-transition services without adding OCR yet.
+- Add data-retention and account-deletion workflow foundations.
+- Keep all fixtures and hosted-service tests synthetic.
 
-## Following milestone: Context Assembly Engine
+## Following milestones
 
-After the data and access-control layer is stable:
+After authenticated persistence and staging isolation are verified:
 
-- define versioned `JananiLLMRequest` and `JananiLLMResponse` Pydantic schemas;
-- build task-specific context inclusion/exclusion policies;
-- implement deterministic relevance selection using synthetic records;
-- enforce recency, provenance, attachment, and token budgets;
-- add approved RAG content as a separate traceable context block;
-- only then implement the Gemini adapter for synthetic integration testing.
+- complete clinician-reviewed safety-rule workflow;
+- build approved clinical content management and RAG retrieval;
+- define and validate the structured hosted-model response schema;
+- implement the Gemini adapter behind the synthetic-data-only gate;
+- add post-generation policy, citation, and safety validation before any response reaches the app.
 
 ## Revised roadmap allocation
 
@@ -99,9 +110,13 @@ After the data and access-control layer is stable:
 
 ## Change log
 
+### 2026-08-04 — 14%
+
+Built the first working data, consent, attachment, and Context Assembly Engine layer on `phase-2/data-context-foundation`. The system can now transform synthetic structured records into one minimal provider-neutral LLM request while enforcing deterministic safety blocking, consent, task relevance, confirmation status, approved-content status, context budgets, and privacy-minimised auditing. GitHub Actions passed on implementation commit `8686255`: Ruff lint, Ruff formatting, 12 safety tests with 92.50% safety coverage, 40 full-suite tests, and the Docker build.
+
 ### 2026-08-04 — 10%
 
-Completed the free-first engineering foundation and revised Janani's architecture around controlled context assembly. GitHub Actions passed on commit `5c283d5`: Ruff lint, Ruff formatting, the safety coverage gate, the full test suite, and the Docker build. The next work begins the database, consent, privacy, and RLS milestone.
+Completed the free-first engineering foundation and revised Janani's architecture around controlled context assembly. GitHub Actions passed on commit `5c283d5`: Ruff lint, Ruff formatting, the safety coverage gate, the full test suite, and the Docker build.
 
 ### 2026-08-04 — Architecture path revised
 
