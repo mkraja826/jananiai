@@ -37,6 +37,13 @@ def create_app(
     application.include_router(context_router)
     application.include_router(account_router)
 
+    if settings is not None:
+
+        def runtime_settings_dependency() -> Settings:
+            return runtime_settings
+
+        application.dependency_overrides[get_settings] = runtime_settings_dependency
+
     if safety_engine is not None:
 
         def runtime_engine_dependency() -> SafetyEngine:
