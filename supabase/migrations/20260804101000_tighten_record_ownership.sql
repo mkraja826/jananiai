@@ -12,7 +12,8 @@ begin
     where pregnancy.id = new.pregnancy_id
       and pregnancy.user_id = new.user_id
   ) then
-    raise exception 'pregnancy_id does not belong to record owner';
+    raise exception 'pregnancy_id does not belong to record owner'
+      using errcode = '42501';
   end if;
   return new;
 end;
