@@ -2,58 +2,47 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 8%
+## Current verified progress: 10%
 
 Updated: 2026-08-04
 Branch: `phase-0-1/foundation`
-Latest fully verified commit: `8c78ccc`
+Latest verified implementation commit: `5c283d5`
 Draft PR: `#1`
 
-## Completed and verified through `8c78ccc`
+## Foundation completed and verified
 
 - [x] Repository initialised.
-- [x] Mission and safety boundaries documented.
+- [x] Mission, intended role, and safety boundaries documented.
 - [x] Free-first development policy established.
 - [x] Python/FastAPI project foundation created.
 - [x] Typed health, readiness, and safety-evaluation API contracts created.
 - [x] Deterministic safety-engine core created.
 - [x] Draft synthetic-test warning rules created.
-- [x] Production mode blocks unapproved rules.
-- [x] Provider-independent LLM interface created.
+- [x] Production mode excludes unapproved rules.
+- [x] Provider-independent LLM protocol created.
 - [x] Mock LLM provider created; no paid API required.
+- [x] Privacy-minimised safety audit model and development recorder created.
+- [x] Safety API records minimal audit events without raw notes or symptom fields.
+- [x] Clinician approval metadata requires sign-off, approval time, and review deadline.
+- [x] Production startup blocks when no current approved ruleset is active.
+- [x] Configuration, mock-provider, audit, startup, API, and safety tests created.
 - [x] Pytest, Ruff, Docker, and GitHub Actions foundations created.
-- [x] Initial Supabase migration for rule versions and audit events created.
-- [x] CI lint failures identified and corrected.
-- [x] Ruff lint and formatting checks passed.
-- [x] Safety-module coverage gate of at least 90% passed.
-- [x] Full automated test suite passed.
-- [x] Production-style Docker image build passed.
+- [x] Initial Supabase migration for rule versions and audit events created with RLS enabled.
+- [x] Foundation architecture, ADRs, threat model, and permanent progress tracker created.
+- [x] Full CI passed on `5c283d5`: Ruff lint, Ruff format, safety coverage gate, full tests, and Docker build.
 
 ## Architecture direction accepted on 2026-08-04
 
-- [x] Janani's core intelligence redefined as a Context Assembly Engine rather than a newly trained general-purpose LLM.
-- [x] User data will be selected by task; the full history will not be sent by default.
+- [x] Janani's core intelligence is a Context Assembly Engine rather than a newly trained general-purpose LLM.
+- [x] User data will be selected according to the current task; complete history will not be sent by default.
 - [x] Attachments will be privately stored, extracted, confidence-checked, and confirmed before relevant content is included.
-- [x] One typed request will combine the current task, relevant confirmed records, selected attachment text/references, approved RAG knowledge, response policy, and token budget.
+- [x] One typed request will combine the task, relevant confirmed records, selected attachment text/references, approved RAG knowledge, response policy, language, and token budget.
 - [x] The first planned hosted provider is Gemini through the provider-independent adapter.
 - [x] Synthetic integration target recorded as stable model configuration `gemini-3.5-flash`.
-- [x] Mock provider remains the default for automated and local tests.
+- [x] The deterministic mock provider remains the default for automated and local tests.
 - [x] Unpaid hosted-model use remains synthetic-data-only.
-- [x] Provider outputs must pass Pydantic, policy, citation, and audit validation before reaching users.
-- [x] Updated roadmap, ADR, architecture flow, and README committed.
-
-## Changes added after the latest fully verified commit
-
-The branch also contains foundation-hardening work that requires a fresh complete CI pass before progress is advanced:
-
-- privacy-minimised in-memory safety audit recorder and API wiring;
-- stricter clinician approval metadata and review deadlines;
-- production startup blocking without a current approved ruleset;
-- configuration, mock-provider, audit, and startup tests;
-- foundation threat model;
-- Context Assembly Engine and Gemini-first architecture documentation.
-
-Do not describe these post-`8c78ccc` changes as verified until CI completes successfully on the latest branch head.
+- [x] Provider output must pass Pydantic, policy, citation, and audit validation before reaching users.
+- [x] Updated roadmap, ADR 0002, architecture flow, README, and draft PR description committed.
 
 ## Current limitations
 
@@ -62,20 +51,33 @@ Do not describe these post-`8c78ccc` changes as verified until CI completes succ
 - No Gemini adapter or hosted LLM is connected yet.
 - No Context Assembly Engine is implemented yet.
 - No attachment extraction/confirmation pipeline is implemented.
-- No RAG or clinical knowledge ingestion is implemented.
+- No approved RAG or clinical knowledge ingestion is implemented.
 - No authentication, consent workflow, or complete user/caregiver RLS model is implemented.
+- The in-memory audit recorder is development-only; durable database persistence is not implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: verified 10%
+## Next milestone: 18% — data, consent, privacy, and RLS
 
-- Run full CI on the latest branch head and fix failures.
-- Complete request-level audit persistence interfaces.
-- Finalise production startup and expired-rule tests.
-- Define versioned `JananiLLMRequest` and `JananiLLMResponse` Pydantic schemas.
-- Define task-specific context policies and relevance tests.
-- Define attachment metadata, extraction-confidence, and confirmation-state schemas.
-- Add a deterministic Context Assembly Engine skeleton using synthetic records.
-- Keep Gemini integration behind a later explicit synthetic-data gate.
+- Design authenticated user, pregnancy, caregiver, consent, and deletion schemas.
+- Add Supabase migrations with strict row-level security.
+- Define consent versions for care, AI processing, model improvement, and research separately.
+- Define structured pregnancy, medication, appointment, symptom, report, and attachment records.
+- Define attachment metadata, extraction confidence, and confirmation states.
+- Add durable privacy-minimised safety audit persistence.
+- Add data-retention and deletion workflows.
+- Add automated cross-user and caregiver-permission isolation tests.
+- Keep all test fixtures synthetic.
+
+## Following milestone: Context Assembly Engine
+
+After the data and access-control layer is stable:
+
+- define versioned `JananiLLMRequest` and `JananiLLMResponse` Pydantic schemas;
+- build task-specific context inclusion/exclusion policies;
+- implement deterministic relevance selection using synthetic records;
+- enforce recency, provenance, attachment, and token budgets;
+- add approved RAG content as a separate traceable context block;
+- only then implement the Gemini adapter for synthetic integration testing.
 
 ## Revised roadmap allocation
 
@@ -97,9 +99,13 @@ Do not describe these post-`8c78ccc` changes as verified until CI completes succ
 
 ## Change log
 
+### 2026-08-04 — 10%
+
+Completed the free-first engineering foundation and revised Janani's architecture around controlled context assembly. GitHub Actions passed on commit `5c283d5`: Ruff lint, Ruff formatting, the safety coverage gate, the full test suite, and the Docker build. The next work begins the database, consent, privacy, and RLS milestone.
+
 ### 2026-08-04 — Architecture path revised
 
-Changed the planned AI path. Janani will assemble a minimal, relevant, verified context package from structured records and attachments, add approved clinical knowledge, and send one typed request through a provider-independent adapter. Gemini 3.5 Flash is the first planned hosted model for synthetic development; the free/unpaid path cannot process real health data. Added ADR 0002 and a detailed Context Assembly and Hosted LLM Flow document. Verified progress remains 8% until the latest branch head passes complete CI.
+Changed the planned AI path. Janani will assemble a minimal, relevant, verified context package from structured records and attachments, add approved clinical knowledge, and send one typed request through a provider-independent adapter. Gemini 3.5 Flash is the first planned hosted model for synthetic development; the unpaid path cannot process real health data. Added ADR 0002 and a detailed Context Assembly and Hosted LLM Flow document.
 
 ### 2026-08-03 — 8%
 
