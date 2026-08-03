@@ -42,9 +42,7 @@ def test_headache_requires_vision_changes_for_draft_combination() -> None:
     engine = SafetyEngine(build_development_rules(), "test", allow_unapproved=True)
 
     headache_only = engine.evaluate(SymptomAssessmentRequest(severe_headache=True))
-    combined = engine.evaluate(
-        SymptomAssessmentRequest(severe_headache=True, vision_changes=True)
-    )
+    combined = engine.evaluate(SymptomAssessmentRequest(severe_headache=True, vision_changes=True))
 
     assert headache_only.triggered is False
     assert combined.triggered is True
