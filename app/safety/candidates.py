@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from . import governance, rules
+from . import governance
+from . import rules
 
 
 _REQUIRED_FIELDS = {
