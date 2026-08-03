@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -21,8 +22,12 @@ def get_safety_engine() -> SafetyEngine:
     )
 
 
+SettingsDependency = Annotated[Settings, Depends(get_settings)]
+SafetyEngineDependency = Annotated[SafetyEngine, Depends(get_safety_engine)]
+
+
 @router.get("/health")
-def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool]:
+def health(settings: SettingsDependency) -> dict[str, str | bool]:
     return {
         "status": "ok",
         "service": settings.app_name,
@@ -34,8 +39,8 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool]:
 
 @router.get("/ready", response_model=ReadinessResponse)
 def readiness(
-    settings: Settings = Depends(get_settings),
-    engine: SafetyEngine = Depends(get_safety_engine),
+    settings: SettingsDependency,
+    engine: SafetyEngineDependency,
 ) -> ReadinessResponse:
     return ReadinessResponse(
         service_ready=True,
@@ -49,8 +54,8 @@ def readiness(
 @router.post("/v1/safety/evaluate", response_model=SafetyDecision)
 def evaluate_safety(
     payload: SymptomAssessmentRequest,
-    settings: Settings = Depends(get_settings),
-    engine: SafetyEngine = Depends(get_safety_engine),
+    settings: SettingsDependency,
+    engine: SafetyEngineDependency,
 ) -> SafetyDecision:
     if settings.free_first_mode and not payload.is_synthetic:
         raise HTTPException(
