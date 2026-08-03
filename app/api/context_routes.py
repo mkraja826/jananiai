@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.routes import get_audit_recorder, get_safety_engine
-from app.audit import AuditRecorder, SafetyAuditEvent
+from app.audit import AuditRecorder, ContextAssemblyAuditEvent, SafetyAuditEvent
 from app.config import Settings, get_settings
 from app.context import ContextAssembler, ContextAssemblyInput, ContextAssemblyResponse
 from app.safety.engine import SafetyEngine
@@ -41,4 +41,12 @@ def assemble_context(
     audit_recorder.record_safety_event(
         SafetyAuditEvent.from_decision(safety_decision, synthetic=payload.is_synthetic)
     )
-    return assembler.assemble(payload, safety_decision)
+    response = assembler.assemble(payload, safety_decision)
+    audit_recorder.record_context_event(
+        ContextAssemblyAuditEvent.from_response(
+            response,
+            task=payload.task,
+            synthetic=payload.is_synthetic,
+        )
+    )
+    return response
