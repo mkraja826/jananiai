@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 
 from app.context.models import (
+    ApprovedKnowledgeChunk,
     ContextAssemblyInput,
     ContextAssemblyResponse,
     ContextAssemblyStatus,
@@ -62,7 +63,9 @@ class ContextAssembler:
             return ContextAssemblyResponse(
                 status=ContextAssemblyStatus.BLOCKED_BY_SAFETY,
                 safety_decision=safety_decision,
-                message="Context assembly stopped because the deterministic safety path blocked AI.",
+                message=(
+                    "Context assembly stopped because the deterministic safety path blocked AI."
+                ),
             )
 
         if not payload.is_synthetic:
@@ -160,7 +163,7 @@ class ContextAssembler:
         payload: ContextAssemblyInput,
         policy: ContextPolicy,
         exclusions: list[ExcludedContextItem],
-    ) -> list:
+    ) -> list[ApprovedKnowledgeChunk]:
         if not policy.include_knowledge:
             for item in payload.approved_knowledge:
                 exclusions.append(
@@ -196,12 +199,22 @@ class ContextAssembler:
         exclusions: list[ExcludedContextItem],
     ) -> list[MedicationRecord]:
         if not policy.include_medications:
-            self._exclude_all(exclusions, "medication", payload.medications, "task policy excludes it")
+            self._exclude_all(
+                exclusions,
+                "medication",
+                payload.medications,
+                "task policy excludes it",
+            )
             return []
 
         requested = set(payload.requested_medication_ids)
         selected: list[MedicationRecord] = []
-        for item in sorted(payload.medications, key=lambda record: record.recorded_at, reverse=True):
+        ordered = sorted(
+            payload.medications,
+            key=lambda record: record.recorded_at,
+            reverse=True,
+        )
+        for item in ordered:
             reason: str | None = None
             if not item.confirmed:
                 reason = "medication is not confirmed"
@@ -231,7 +244,12 @@ class ContextAssembler:
         exclusions: list[ExcludedContextItem],
     ) -> list[AppointmentRecord]:
         if not policy.include_appointments:
-            self._exclude_all(exclusions, "appointment", payload.appointments, "task policy excludes it")
+            self._exclude_all(
+                exclusions,
+                "appointment",
+                payload.appointments,
+                "task policy excludes it",
+            )
             return []
 
         ordered = sorted(payload.appointments, key=lambda item: item.scheduled_at, reverse=True)
@@ -251,7 +269,12 @@ class ContextAssembler:
         exclusions: list[ExcludedContextItem],
     ) -> list[SelectedAttachment]:
         if not policy.include_attachments:
-            self._exclude_all(exclusions, "attachment", payload.attachments, "task policy excludes it")
+            self._exclude_all(
+                exclusions,
+                "attachment",
+                payload.attachments,
+                "task policy excludes it",
+            )
             return []
 
         requested = set(payload.requested_attachment_ids)
