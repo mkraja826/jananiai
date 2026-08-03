@@ -9,6 +9,10 @@ from app.auth.models import AuthenticatedUser
 class SupabasePersistenceError(Exception):
     """Raised when a PostgREST or RPC request cannot be completed safely."""
 
+    def __init__(self, message: str, *, status_code: int = 503) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
 
 class SupabaseUserRestClient:
     """RLS-scoped Supabase REST client using the caller's verified access token."""
@@ -25,11 +29,16 @@ class SupabaseUserRestClient:
         self._base_url = supabase_url.rstrip("/")
         self._publishable_key = publishable_key
         self._user = user
+        self._owns_client = client is None
         self._client = client or httpx.AsyncClient(timeout=timeout_seconds)
 
     @property
     def user(self) -> AuthenticatedUser:
         return self._user
+
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self._client.aclose()
 
     def _headers(self, *, prefer: str | None = None) -> dict[str, str]:
         headers = {
@@ -109,9 +118,13 @@ class SupabaseUserRestClient:
             raise SupabasePersistenceError("Supabase data service could not be reached") from exc
 
         if response.status_code in {401, 403}:
-            raise SupabasePersistenceError("Supabase RLS denied the requested operation")
+            raise SupabasePersistenceError(
+                "Supabase RLS denied the requested operation",
+                status_code=403,
+            )
         if response.status_code >= 400:
             raise SupabasePersistenceError(
-                f"Supabase data request failed with status {response.status_code}"
+                f"Supabase data request failed with status {response.status_code}",
+                status_code=502,
             )
         return response
