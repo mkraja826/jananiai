@@ -11,8 +11,18 @@ from app.safety.models import RuleMetadata, RuleStatus, SafetySeverity
 from app.safety.rules import build_development_rules
 
 
+def production_settings() -> Settings:
+    return Settings(
+        environment="production",
+        free_first_mode=True,
+        auth_required=True,
+        supabase_url="https://synthetic-project.supabase.co",
+        supabase_publishable_key="sb_publishable_synthetic",
+    )
+
+
 def test_production_startup_is_blocked_without_approved_rules() -> None:
-    settings = Settings(environment="production", free_first_mode=True)
+    settings = production_settings()
     engine = SafetyEngine(build_development_rules(), "production-test", allow_unapproved=False)
 
     with pytest.raises(RuntimeError, match="Production startup blocked"):
@@ -36,9 +46,8 @@ def test_production_startup_accepts_current_approved_ruleset() -> None:
         ),
     )
     engine = SafetyEngine((approved,), "approved-production-test", allow_unapproved=False)
-    settings = Settings(environment="production", free_first_mode=True)
 
-    application = create_app(settings=settings, safety_engine=engine)
+    application = create_app(settings=production_settings(), safety_engine=engine)
     response = TestClient(application).get("/ready")
 
     assert response.status_code == 200

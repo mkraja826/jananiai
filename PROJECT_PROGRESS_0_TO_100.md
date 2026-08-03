@@ -2,12 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 14%
+## Current verified progress: 18%
 
 Updated: 2026-08-04
-Branch: `phase-2/data-context-foundation`
-Latest verified implementation commit: `8686255`
-Draft PR: `#2`
+Branch: `phase-3/authenticated-persistence`
+Latest verified implementation commit: `5b4210a`
+Draft PR: `#3`
 
 ## Foundation completed and verified
 
@@ -50,45 +50,64 @@ Draft PR: `#2`
 - [x] Added owner-scoped RLS policies and private storage policies.
 - [x] Added database triggers preventing records from being linked to another user's pregnancy.
 - [x] Added tests for consent revocation, data confirmation, task relevance, safety blocking, budgets, API behavior, and audit minimisation.
-- [x] GitHub Actions passed on `8686255`: Ruff lint, Ruff formatting, 92.50% safety coverage, 40 tests, and Docker build.
+
+## Phase 3 authenticated persistence and local RLS validation completed
+
+- [x] Added Supabase bearer-token verification through the Auth user endpoint.
+- [x] Added verified request identity with bearer tokens excluded from serialization and logs.
+- [x] Made authentication and Supabase configuration mandatory in staging and production.
+- [x] Added an RLS-scoped PostgREST client using the verified caller token and publishable key.
+- [x] Added server-side loading for profiles, active pregnancy, consent history, medications, appointments, attachments, and extraction versions.
+- [x] Added `POST /v1/context/assemble-stored`; clients no longer need to send their complete health history for this path.
+- [x] Added identity matching between the verified user and repository client.
+- [x] Added authenticated database RPCs for minimal safety and context audit writes.
+- [x] Kept questions, symptom notes, extracted report text, prompts, and model outputs out of audit RPC payloads.
+- [x] Added attachment extraction state transitions: start, process, complete/fail, confirm/reject.
+- [x] Added owner-scoped attachment-confirmation RPC.
+- [x] Added a service-role-only extraction writer RPC while keeping direct extraction-table writes closed.
+- [x] Added account-deletion request table, RPC, model, and protected endpoint.
+- [x] Added explicit grants and revokes for user-owned and internal tables.
+- [x] Added owner-read policy for safety audit events.
+- [x] Added free local Supabase configuration and synthetic-user provisioning.
+- [x] Added a separate GitHub Actions local-Supabase job requiring no paid branch or hosted credentials.
+- [x] Rebuilt all six migrations from an empty local Postgres database.
+- [x] Created and authenticated two ephemeral synthetic users.
+- [x] Verified profile and pregnancy owner isolation.
+- [x] Verified append-only consent history.
+- [x] Verified medication, appointment, and attachment ownership links.
+- [x] Verified direct writes to audit and extraction tables are denied.
+- [x] Verified owner-scoped audit and attachment-confirmation RPCs.
+- [x] Verified service-role-only extraction writes.
+- [x] Verified private Storage object paths are owner-scoped.
+- [x] Verified deletion requests are private and idempotent.
+- [x] Added Windows PowerShell instructions for the same local validation flow.
+- [x] GitHub Actions passed on `5b4210a`: quality pipeline and free local-Supabase pipeline both green; 9/9 local RLS/RPC/Storage tests passed.
 
 ## Current limitations
 
 - Draft warning rules have not been reviewed or approved by a licensed clinician.
 - No real patient data may be processed.
+- The existing hosted Janani Supabase project has not been modified.
+- No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
 - No Gemini adapter or hosted LLM is connected.
 - No hosted-model response schema or output-policy validator is implemented yet.
-- Supabase migrations have not been executed against a staging project.
-- RLS policies have not been integration-tested against authenticated staging users.
-- FastAPI does not yet verify Supabase access tokens or propagate authenticated user identity.
-- Consent, record, attachment, safety-audit, and context-audit repositories are not durably connected to Supabase.
-- No OCR or attachment extraction service is implemented.
+- No OCR engine or extraction worker process is implemented; only the worker-only persistence RPC and confirmation controls exist.
 - No approved clinical-content ingestion, embeddings, or RAG retrieval is implemented.
+- The deletion-request workflow does not yet include the controlled deletion worker, storage cleanup, session revocation, or retention-policy execution.
 - No caregiver sharing or permissions model is implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: 18% — authenticated persistence and staging RLS validation
+## Next milestone: 18–30% — clinician-approved deterministic safety engine
 
-- Add Supabase access-token verification to FastAPI.
-- Propagate authenticated user identity through protected service calls.
-- Implement durable repositories for consent, pregnancy, medication, appointments, attachments, and audits.
-- Execute migrations against a separate staging Supabase project.
-- Add automated two-user isolation tests for every user-owned table and private storage path.
-- Validate append-only consent behavior and consent revocation in staging.
-- Validate that backend-only extraction and context-audit tables reject direct client writes.
-- Add attachment extraction state-transition services without adding OCR yet.
-- Add data-retention and account-deletion workflow foundations.
-- Keep all fixtures and hosted-service tests synthetic.
-
-## Following milestones
-
-After authenticated persistence and staging isolation are verified:
-
-- complete clinician-reviewed safety-rule workflow;
-- build approved clinical content management and RAG retrieval;
-- define and validate the structured hosted-model response schema;
-- implement the Gemini adapter behind the synthetic-data-only gate;
-- add post-generation policy, citation, and safety validation before any response reaches the app.
+- Establish clinician reviewer identities, roles, and dual-approval workflow.
+- Convert draft warning rules into versioned review candidates.
+- Add source provenance and rationale for every condition and threshold.
+- Add applicability boundaries by pregnancy stage and structured input requirements.
+- Add approval expiry, retirement, replacement, and rollback controls.
+- Add immutable review and activation audit events.
+- Expand true-positive, false-positive, boundary, interaction, and regression tests.
+- Add versioned clinician-reviewed escalation wording in English and Telugu.
+- Keep all rules inactive for real users until clinician sign-off and later hosted staging validation are complete.
 
 ## Revised roadmap allocation
 
@@ -110,9 +129,17 @@ After authenticated persistence and staging isolation are verified:
 
 ## Change log
 
+### 2026-08-04 — 18%
+
+Completed the free authenticated-persistence validation gate without creating a paid Supabase branch or changing the hosted Janani project. Added an isolated local Supabase Docker stack, full migration reset, ephemeral synthetic-user provisioning, worker-only extraction RPC, and a permanent CI isolation job. GitHub Actions passed on `5b4210a`: the normal quality pipeline was green and all 9 local RLS, RPC, extraction, deletion, and private-Storage tests passed.
+
+### 2026-08-04 — 17%
+
+Built and verified the authenticated persistence foundation on `phase-3/authenticated-persistence`. Added Supabase token verification, RLS-scoped record loading, authenticated stored-context assembly, privacy-minimised audit RPCs, attachment state transitions, deletion-request foundations, migration hardening, and an opt-in two-user staging harness. GitHub Actions passed on implementation commit `60c4406`: Ruff lint, Ruff formatting, 12 safety tests with 92.50% safety coverage, 60 full-suite tests, one intentionally skipped staging integration test, and the Docker build.
+
 ### 2026-08-04 — 14%
 
-Built the first working data, consent, attachment, and Context Assembly Engine layer on `phase-2/data-context-foundation`. The system can now transform synthetic structured records into one minimal provider-neutral LLM request while enforcing deterministic safety blocking, consent, task relevance, confirmation status, approved-content status, context budgets, and privacy-minimised auditing. GitHub Actions passed on implementation commit `8686255`: Ruff lint, Ruff formatting, 12 safety tests with 92.50% safety coverage, 40 full-suite tests, and the Docker build.
+Built the first working data, consent, attachment, and Context Assembly Engine layer on `phase-2/data-context-foundation`. The system can transform synthetic structured records into one minimal provider-neutral LLM request while enforcing deterministic safety blocking, consent, task relevance, confirmation status, approved-content status, context budgets, and privacy-minimised auditing. GitHub Actions passed on implementation commit `8686255`: Ruff lint, Ruff formatting, 12 safety tests with 92.50% safety coverage, 40 full-suite tests, and the Docker build.
 
 ### 2026-08-04 — 10%
 
