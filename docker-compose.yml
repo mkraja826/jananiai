@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    environment:
+      JANANI_ENVIRONMENT: development
+      JANANI_FREE_FIRST_MODE: "true"
+      JANANI_ALLOW_REAL_PATIENT_DATA: "false"
+      JANANI_LLM_PROVIDER: mock
+    ports:
+      - "8000:8000"
