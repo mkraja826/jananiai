@@ -39,9 +39,7 @@ class SupabaseAuthVerifier:
                 },
             )
         except httpx.RequestError as exc:
-            raise AuthenticationServiceUnavailable(
-                "Supabase Auth could not be reached"
-            ) from exc
+            raise AuthenticationServiceUnavailable("Supabase Auth could not be reached") from exc
 
         if response.status_code in {401, 403}:
             raise AuthenticationError("Bearer token is invalid or expired")
