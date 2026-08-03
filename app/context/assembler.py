@@ -175,9 +175,9 @@ class ContextAssembler:
                 )
             return []
 
-        selected = [
-            item for item in payload.approved_knowledge if item.eligible_for(payload.task)
-        ][: policy.max_knowledge_chunks]
+        selected = [item for item in payload.approved_knowledge if item.eligible_for(payload.task)][
+            : policy.max_knowledge_chunks
+        ]
         selected_ids = {item.chunk_id for item in selected}
         for item in payload.approved_knowledge:
             if item.chunk_id not in selected_ids:
@@ -314,12 +314,16 @@ class ContextAssembler:
         task: TaskType,
         selected: SelectedContext,
     ) -> str | None:
-        if task in {
-            TaskType.WEEKLY_GUIDANCE,
-            TaskType.NUTRITION,
-            TaskType.APPOINTMENT_PREPARATION,
-            TaskType.GENERAL_QUESTION,
-        } and selected.pregnancy is None:
+        if (
+            task
+            in {
+                TaskType.WEEKLY_GUIDANCE,
+                TaskType.NUTRITION,
+                TaskType.APPOINTMENT_PREPARATION,
+                TaskType.GENERAL_QUESTION,
+            }
+            and selected.pregnancy is None
+        ):
             return "This task requires a structured pregnancy record."
         if task is TaskType.REPORT_EXPLANATION and not selected.attachments:
             return "Report explanation requires at least one confirmed selected report attachment."
