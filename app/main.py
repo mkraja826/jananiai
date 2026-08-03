@@ -32,6 +32,14 @@ def create_app(
         ),
     )
     application.include_router(router)
+
+    if safety_engine is not None:
+
+        def runtime_engine_dependency() -> SafetyEngine:
+            return runtime_engine
+
+        application.dependency_overrides[get_safety_engine] = runtime_engine_dependency
+
     return application
 
 
