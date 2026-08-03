@@ -23,7 +23,7 @@ from app.safety.governance import (
 from app.safety.models import RuleStatus, SafetySeverity, SymptomAssessmentRequest
 from app.safety.rules import SafetyRule
 
-NOW = datetime(2026, 8, 4, 0, 0, tzinfo=UTC)
+NOW = datetime.now(UTC).replace(microsecond=0) - timedelta(seconds=1)
 
 
 def reviewer(
