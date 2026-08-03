@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app import __version__
+from app.api.context_routes import router as context_router
 from app.api.routes import get_safety_engine, router
 from app.config import Settings, get_settings
 from app.safety.engine import SafetyEngine
@@ -32,6 +33,7 @@ def create_app(
         ),
     )
     application.include_router(router)
+    application.include_router(context_router)
 
     if safety_engine is not None:
 
