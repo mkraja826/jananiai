@@ -12,7 +12,7 @@ from app.context.models import (
     TaskType,
 )
 from app.context.policies import ContextPolicy, policy_for
-from app.domain import ConsentPurpose, MedicationRecord
+from app.domain import AppointmentRecord, MedicationRecord
 from app.safety.models import SafetyDecision
 
 _HARD_CONSTRAINTS = [
@@ -70,6 +70,13 @@ class ContextAssembler:
                 status=ContextAssemblyStatus.INSUFFICIENT_CONTEXT,
                 safety_decision=safety_decision,
                 message="Free-first context assembly accepts synthetic data only.",
+            )
+
+        if payload.task is TaskType.REPORT_EXPLANATION and not payload.requested_attachment_ids:
+            return ContextAssemblyResponse(
+                status=ContextAssemblyStatus.INSUFFICIENT_CONTEXT,
+                safety_decision=safety_decision,
+                message="Report explanation requires an explicitly selected attachment.",
             )
 
         policy = policy_for(payload.task)
@@ -134,24 +141,7 @@ class ContextAssembler:
         medications = self._select_medications(payload, policy, exclusions)
         appointments = self._select_appointments(payload, policy, exclusions)
         attachments = self._select_attachments(payload, policy, exclusions)
-        knowledge = [
-            item for item in payload.approved_knowledge if item.eligible_for(payload.task)
-        ][: policy.max_knowledge_chunks]
-
-        eligible_knowledge_ids = {item.chunk_id for item in knowledge}
-        for item in payload.approved_knowledge:
-            if item.chunk_id not in eligible_knowledge_ids:
-                reason = "not approved, review expired, task irrelevant, or over task limit"
-                exclusions.append(
-                    ExcludedContextItem(
-                        category="knowledge",
-                        item_id=item.chunk_id,
-                        reason=reason,
-                    )
-                )
-
-        if not policy.include_knowledge:
-            knowledge = []
+        knowledge = self._select_knowledge(payload, policy, exclusions)
 
         return (
             SelectedContext(
@@ -164,6 +154,40 @@ class ContextAssembler:
             ),
             exclusions,
         )
+
+    def _select_knowledge(
+        self,
+        payload: ContextAssemblyInput,
+        policy: ContextPolicy,
+        exclusions: list[ExcludedContextItem],
+    ) -> list:
+        if not policy.include_knowledge:
+            for item in payload.approved_knowledge:
+                exclusions.append(
+                    ExcludedContextItem(
+                        category="knowledge",
+                        item_id=item.chunk_id,
+                        reason="task policy excludes it",
+                    )
+                )
+            return []
+
+        selected = [
+            item for item in payload.approved_knowledge if item.eligible_for(payload.task)
+        ][: policy.max_knowledge_chunks]
+        selected_ids = {item.chunk_id for item in selected}
+        for item in payload.approved_knowledge:
+            if item.chunk_id not in selected_ids:
+                exclusions.append(
+                    ExcludedContextItem(
+                        category="knowledge",
+                        item_id=item.chunk_id,
+                        reason=(
+                            "not approved, review expired, task irrelevant, or over task limit"
+                        ),
+                    )
+                )
+        return selected
 
     def _select_medications(
         self,
@@ -205,7 +229,7 @@ class ContextAssembler:
         payload: ContextAssemblyInput,
         policy: ContextPolicy,
         exclusions: list[ExcludedContextItem],
-    ) -> list:
+    ) -> list[AppointmentRecord]:
         if not policy.include_appointments:
             self._exclude_all(exclusions, "appointment", payload.appointments, "task policy excludes it")
             return []
@@ -325,13 +349,16 @@ class ContextAssembler:
         self,
         exclusions: list[ExcludedContextItem],
         category: str,
-        items: Iterable,
+        items: Iterable[object],
         reason: str,
     ) -> None:
         for item in items:
-            item_id = self._item_id(item)
             exclusions.append(
-                ExcludedContextItem(category=category, item_id=item_id, reason=reason)
+                ExcludedContextItem(
+                    category=category,
+                    item_id=self._item_id(item),
+                    reason=reason,
+                )
             )
 
     def _item_id(self, item: object) -> str:
