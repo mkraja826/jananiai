@@ -2,7 +2,6 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import httpx
-import pytest
 
 from tests.integration import test_supabase_atomic_rulesets as atomic
 
