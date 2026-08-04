@@ -62,3 +62,4 @@ def test_ruleset_approval_named_payload_matches_postgrest_signature() -> None:
     body = response.json()
 
     assert body.get("code") != "PGRST202", body
+    assert body.get("code") != "42883", body
