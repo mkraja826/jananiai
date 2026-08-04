@@ -51,6 +51,15 @@ jobs:
           --exclude studio,imgproxy,realtime,edge-runtime,logflare,vector,supavisor
       - name: Rebuild database from migrations
         run: supabase db reset --local --no-seed
+      - name: Refresh PostgREST schema cache
+        shell: bash
+        run: |
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.Names}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+          docker exec "$DB_CONTAINER" \
+            psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c "NOTIFY pgrst, 'reload schema';"
+          sleep 2
       - name: Provision two synthetic users
         shell: bash
         run: |
