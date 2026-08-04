@@ -1,8 +1,6 @@
 from pathlib import Path
 
-MIGRATION = Path(
-    "supabase/migrations/20260804121800_disambiguate_ruleset_approval_rpc.sql"
-)
+MIGRATION = Path("supabase/migrations/20260804121800_disambiguate_ruleset_approval_rpc.sql")
 
 
 def test_ruleset_approval_has_one_public_postgrest_signature() -> None:
