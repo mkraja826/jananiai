@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -29,7 +30,7 @@ def release(
         candidate_id=uuid4(),
         rule_id=rule_id,
         rule_version="1.0.0",
-        candidate_digest=digest or (rule_id.lower().replace("-", "a")[:1] or "a") * 64,
+        candidate_digest=digest or hashlib.sha256(rule_id.encode()).hexdigest(),
         approval_review_ids=(uuid4(), uuid4()),
         reviewer_ids=(uuid4(), uuid4()),
         reviewer_roles=(ReviewerRole.OBSTETRICIAN, ReviewerRole.CLINICAL_SAFETY),
