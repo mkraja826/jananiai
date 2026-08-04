@@ -1,8 +1,6 @@
 from pathlib import Path
 
-MIGRATION = Path(
-    "supabase/migrations/20260804122000_expose_json_native_ruleset_approval.sql"
-)
+MIGRATION = Path("supabase/migrations/20260804122000_expose_json_native_ruleset_approval.sql")
 
 
 def test_ruleset_approval_exposes_one_json_native_signature() -> None:
