@@ -134,29 +134,35 @@ def create_approved_release(
         ),
     ):
         review_id = str(uuid4())
-        assert call_rpc(
-            "record_janani_clinical_rule_review",
-            {
-                "p_review_id": review_id,
-                "p_candidate_id": candidate_id,
-                "p_reviewer_id": reviewer_id,
-                "p_decision": "approve",
-                "p_rationale": rationale,
-                "p_reviewed_at": now.isoformat(),
-            },
-        ) == review_id
+        assert (
+            call_rpc(
+                "record_janani_clinical_rule_review",
+                {
+                    "p_review_id": review_id,
+                    "p_candidate_id": candidate_id,
+                    "p_reviewer_id": reviewer_id,
+                    "p_decision": "approve",
+                    "p_rationale": rationale,
+                    "p_reviewed_at": now.isoformat(),
+                },
+            )
+            == review_id
+        )
 
     release_id = str(uuid4())
-    assert call_rpc(
-        "approve_janani_clinical_safety_release",
-        {
-            "p_release_id": release_id,
-            "p_candidate_id": candidate_id,
-            "p_activates_at": activates_at.isoformat(),
-            "p_expires_at": expires_at.isoformat(),
-            "p_supersedes_release_id": None,
-        },
-    ) == release_id
+    assert (
+        call_rpc(
+            "approve_janani_clinical_safety_release",
+            {
+                "p_release_id": release_id,
+                "p_candidate_id": candidate_id,
+                "p_activates_at": activates_at.isoformat(),
+                "p_expires_at": expires_at.isoformat(),
+                "p_supersedes_release_id": None,
+            },
+        )
+        == release_id
+    )
     return release_id
 
 
