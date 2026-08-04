@@ -150,29 +150,35 @@ def create_approved_release(
         ),
     ):
         review_id = str(uuid4())
-        assert call_service_rpc(
-            "record_janani_clinical_rule_review",
-            {
-                "p_review_id": review_id,
-                "p_candidate_id": candidate_id,
-                "p_reviewer_id": reviewer_id,
-                "p_decision": "approve",
-                "p_rationale": rationale,
-                "p_reviewed_at": now.isoformat(),
-            },
-        ) == review_id
+        assert (
+            call_service_rpc(
+                "record_janani_clinical_rule_review",
+                {
+                    "p_review_id": review_id,
+                    "p_candidate_id": candidate_id,
+                    "p_reviewer_id": reviewer_id,
+                    "p_decision": "approve",
+                    "p_rationale": rationale,
+                    "p_reviewed_at": now.isoformat(),
+                },
+            )
+            == review_id
+        )
 
     release_id = str(uuid4())
-    assert call_service_rpc(
-        "approve_janani_clinical_safety_release",
-        {
-            "p_release_id": release_id,
-            "p_candidate_id": candidate_id,
-            "p_activates_at": activates_at.isoformat(),
-            "p_expires_at": expires_at.isoformat(),
-            "p_supersedes_release_id": None,
-        },
-    ) == release_id
+    assert (
+        call_service_rpc(
+            "approve_janani_clinical_safety_release",
+            {
+                "p_release_id": release_id,
+                "p_candidate_id": candidate_id,
+                "p_activates_at": activates_at.isoformat(),
+                "p_expires_at": expires_at.isoformat(),
+                "p_supersedes_release_id": None,
+            },
+        )
+        == release_id
+    )
     return release_id
 
 
@@ -251,18 +257,21 @@ def test_atomic_ruleset_activation_replacement_and_rollback() -> None:
     )
     assert denied_rpc.status_code in {401, 403}
 
-    assert call_service_rpc(
-        "approve_janani_clinical_safety_ruleset",
-        {
-            "p_ruleset_id": first_ruleset_id,
-            "p_version": "atomic-ruleset-1",
-            "p_required_rule_ids": ["ATOMIC-RULE-A", "ATOMIC-RULE-B"],
-            "p_release_ids": list(first_release_ids),
-            "p_activates_at": first_activation.isoformat(),
-            "p_expires_at": first_expiry.isoformat(),
-            "p_supersedes_ruleset_id": None,
-        },
-    ) == first_ruleset_id
+    assert (
+        call_service_rpc(
+            "approve_janani_clinical_safety_ruleset",
+            {
+                "p_ruleset_id": first_ruleset_id,
+                "p_version": "atomic-ruleset-1",
+                "p_required_rule_ids": ["ATOMIC-RULE-A", "ATOMIC-RULE-B"],
+                "p_release_ids": list(first_release_ids),
+                "p_activates_at": first_activation.isoformat(),
+                "p_expires_at": first_expiry.isoformat(),
+                "p_supersedes_ruleset_id": None,
+            },
+        )
+        == first_ruleset_id
+    )
 
     incomplete_ruleset = httpx.post(
         rest_url("rpc/approve_janani_clinical_safety_ruleset"),
@@ -281,13 +290,16 @@ def test_atomic_ruleset_activation_replacement_and_rollback() -> None:
     assert incomplete_ruleset.status_code == 403
 
     wait_until(first_activation)
-    assert call_service_rpc(
-        "activate_janani_clinical_safety_ruleset",
-        {
-            "p_ruleset_id": first_ruleset_id,
-            "p_reason": "Synthetic first atomic ruleset activation",
-        },
-    ) == first_ruleset_id
+    assert (
+        call_service_rpc(
+            "activate_janani_clinical_safety_ruleset",
+            {
+                "p_ruleset_id": first_ruleset_id,
+                "p_reason": "Synthetic first atomic ruleset activation",
+            },
+        )
+        == first_ruleset_id
+    )
     assert_exact_active_releases(first_release_ids)
 
     second_now = datetime.now(UTC)
@@ -312,27 +324,33 @@ def test_atomic_ruleset_activation_replacement_and_rollback() -> None:
         ),
     }
     second_ruleset_id = str(uuid4())
-    assert call_service_rpc(
-        "approve_janani_clinical_safety_ruleset",
-        {
-            "p_ruleset_id": second_ruleset_id,
-            "p_version": "atomic-ruleset-2",
-            "p_required_rule_ids": ["ATOMIC-RULE-A", "ATOMIC-RULE-B"],
-            "p_release_ids": list(second_release_ids),
-            "p_activates_at": second_activation.isoformat(),
-            "p_expires_at": second_expiry.isoformat(),
-            "p_supersedes_ruleset_id": first_ruleset_id,
-        },
-    ) == second_ruleset_id
+    assert (
+        call_service_rpc(
+            "approve_janani_clinical_safety_ruleset",
+            {
+                "p_ruleset_id": second_ruleset_id,
+                "p_version": "atomic-ruleset-2",
+                "p_required_rule_ids": ["ATOMIC-RULE-A", "ATOMIC-RULE-B"],
+                "p_release_ids": list(second_release_ids),
+                "p_activates_at": second_activation.isoformat(),
+                "p_expires_at": second_expiry.isoformat(),
+                "p_supersedes_ruleset_id": first_ruleset_id,
+            },
+        )
+        == second_ruleset_id
+    )
 
     wait_until(second_activation)
-    assert call_service_rpc(
-        "activate_janani_clinical_safety_ruleset",
-        {
-            "p_ruleset_id": second_ruleset_id,
-            "p_reason": "Synthetic complete ruleset replacement",
-        },
-    ) == second_ruleset_id
+    assert (
+        call_service_rpc(
+            "activate_janani_clinical_safety_ruleset",
+            {
+                "p_ruleset_id": second_ruleset_id,
+                "p_reason": "Synthetic complete ruleset replacement",
+            },
+        )
+        == second_ruleset_id
+    )
     assert_exact_active_releases(second_release_ids)
 
     rulesets = read_rows(
@@ -346,14 +364,17 @@ def test_atomic_ruleset_activation_replacement_and_rollback() -> None:
         second_ruleset_id: "active",
     }
 
-    assert call_service_rpc(
-        "rollback_janani_clinical_safety_ruleset",
-        {
-            "p_active_ruleset_id": second_ruleset_id,
-            "p_replacement_ruleset_id": first_ruleset_id,
-            "p_reason": "Synthetic ruleset regression rollback",
-        },
-    ) == first_ruleset_id
+    assert (
+        call_service_rpc(
+            "rollback_janani_clinical_safety_ruleset",
+            {
+                "p_active_ruleset_id": second_ruleset_id,
+                "p_replacement_ruleset_id": first_ruleset_id,
+                "p_reason": "Synthetic ruleset regression rollback",
+            },
+        )
+        == first_ruleset_id
+    )
     assert_exact_active_releases(first_release_ids)
 
     final_rulesets = read_rows(
