@@ -210,9 +210,7 @@ class SafetyRulesetGovernanceService:
             for release in sorted(releases, key=lambda item: item.rule_id)
         )
         retired_releases = tuple(
-            release.model_copy(
-                update={"status": ReleaseStatus.RETIRED, "terminal_reason": reason}
-            )
+            release.model_copy(update={"status": ReleaseStatus.RETIRED, "terminal_reason": reason})
             for release in sorted(active_releases, key=lambda item: item.rule_id)
             if release.release_id not in replacement_ids
         )
@@ -253,11 +251,7 @@ class SafetyRulesetGovernanceService:
             RulesetStatus.RETIRED,
         }:
             raise ValueError("Rollback replacement must be an approved prior ruleset")
-        if not (
-            replacement_ruleset.activates_at
-            <= checked_at
-            < replacement_ruleset.expires_at
-        ):
+        if not (replacement_ruleset.activates_at <= checked_at < replacement_ruleset.expires_at):
             raise ValueError("Rollback replacement is outside its activation window")
 
         self._validate_manifest(
