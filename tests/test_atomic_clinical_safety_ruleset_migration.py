@@ -1,8 +1,6 @@
 from pathlib import Path
 
-MIGRATION = Path(
-    "supabase/migrations/20260804121500_atomic_clinical_safety_rulesets.sql"
-)
+MIGRATION = Path("supabase/migrations/20260804121500_atomic_clinical_safety_rulesets.sql")
 
 
 def test_atomic_ruleset_schema_is_private_immutable_and_complete() -> None:
