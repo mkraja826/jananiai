@@ -2,12 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 22%
+## Current verified progress: 25%
 
 Updated: 2026-08-04
-Branch: `phase-4/clinical-safety-governance`
-Latest verified implementation commit: `148565f`
-Draft PR: `#4`
+Branch: `phase-5/atomic-ruleset-activation`
+Latest verified implementation commit: `59c7c10`
+Draft PR: `#5`
 
 ## Foundation completed and verified
 
@@ -108,12 +108,38 @@ Draft PR: `#4`
 - [x] Documented the clinical safety governance lifecycle and remaining launch gates.
 - [x] GitHub Actions passed on `148565f`: Ruff lint and formatting, 27 safety tests, 96.87% safety-module coverage, 80 full-suite tests, 10 expected staging skips, Docker build, eight migrations rebuilt from zero, and 10/10 local RLS/RPC/Storage/governance tests.
 
+## Phase 5 atomic safety ruleset activation completed and verified
+
+- [x] Made a complete deterministic safety ruleset the deployable unit instead of an individual rule release.
+- [x] Added immutable ruleset and member domain models.
+- [x] Added a complete required-rule manifest with exactly one release per required rule ID.
+- [x] Bound every ruleset member to its release ID, rule ID, and reviewed candidate digest.
+- [x] Added deterministic SHA-256 ruleset manifest digests.
+- [x] Rejected partial, extra, duplicate, altered, expired, or invalid-state member collections.
+- [x] Added pure-domain atomic approval, first activation, replacement, and rollback transitions.
+- [x] Added private Supabase ruleset and ruleset-member tables.
+- [x] Enforced at most one active clinical safety ruleset.
+- [x] Made ruleset manifests and membership immutable.
+- [x] Added service-role-only ruleset approval, activation, and rollback RPCs.
+- [x] Denied `anon` and `authenticated` access to ruleset tables and management RPCs.
+- [x] Added active-release drift detection before activation and rollback.
+- [x] Added final exact-active-release-set consistency checks inside each transaction.
+- [x] Added ruleset approval, activation, retirement, and rollback governance events.
+- [x] Added PostgREST OpenAPI discovery validation for all three ruleset RPCs.
+- [x] Added explicit local PostgREST schema refresh after migration reset.
+- [x] Resolved pgcrypto hashing under a locked `public, extensions` security-definer search path.
+- [x] Added adversarial unit tests for incomplete manifests, altered digests, duplicate identities, invalid states, and expired members.
+- [x] Added a two-generation local-Supabase test proving complete activation, replacement, exact active membership, and rollback restoration.
+- [x] Documented the atomic ruleset architecture, failure modes, API boundary, and launch gates.
+- [x] GitHub Actions passed on `59c7c10`: Ruff lint and formatting, 34 safety tests with 97.44% safety-module coverage, 94 full-suite tests with 12 expected staging skips, Docker build, all migrations rebuilt from zero, and 12/12 local RLS/RPC/Storage/governance/atomic-ruleset integration tests.
+
 ## Current limitations
 
 - No licensed clinician identity or credential has been entered into Janani AI.
 - No warning rule has been reviewed or approved by a licensed clinician.
 - Every current safety candidate contains development-placeholder provenance and cannot be activated.
 - Current English and Telugu escalation wording remains development-only and not clinically approved.
+- Atomic ruleset controls are validated only with synthetic releases in isolated local infrastructure.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
@@ -125,18 +151,18 @@ Draft PR: `#4`
 - No caregiver sharing or permissions model is implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: 22–30% — clinically reviewed deterministic safety rules
+## Next milestone: 25–30% — clinically reviewed deterministic safety rules
 
-- Establish the authorised reviewer onboarding and conflict-of-interest policy.
-- Verify real obstetrician and clinical-safety reviewer credentials outside source control.
+- Establish the authorised reviewer onboarding, conflict-of-interest, and operating policies.
+- Verify real obstetrician, clinical-safety, and Telugu-language reviewer credentials outside source control.
 - Replace development placeholders with current clinician-reviewed sources and exact sections.
 - Document rationale and applicability boundaries for each warning rule.
 - Review English and Telugu escalation wording with clinical and language reviewers.
 - Add true-positive, false-positive, boundary, interaction, and regression datasets for each candidate.
-- Add ruleset-level release composition, atomic activation, and rollback tests.
 - Add controlled administration APIs that never expose the service-role key to mobile clients.
-- Repeat governance validation in an isolated hosted staging environment before any real-user path.
-- Keep every rule inactive until all required reviews, tests, and launch gates pass.
+- Rehearse incident response and emergency ruleset rollback.
+- Repeat the complete governance and atomic-ruleset workflow in an isolated hosted staging environment.
+- Keep every rule inactive until all required reviews, datasets, staging tests, and launch gates pass.
 
 ## Revised roadmap allocation
 
@@ -157,6 +183,10 @@ Draft PR: `#4`
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-04 — 25%
+
+Built and verified atomic deterministic safety rulesets on `phase-5/atomic-ruleset-activation`. Added complete required-rule manifests, immutable SHA-256 member binding, private ruleset persistence, service-role-only approval/activation/rollback, active-release drift detection, transactional exact-active-set checks, PostgREST contract validation, and two-generation activation/replacement/rollback testing. GitHub Actions passed on `59c7c10`: 34 safety tests with 97.44% coverage, 94 full-suite tests, 12 expected staging skips, Docker build, all migrations rebuilt from zero, and 12/12 local integration tests. No current warning rule became clinically approved or usable with real patient data.
 
 ### 2026-08-04 — 22%
 
