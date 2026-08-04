@@ -283,8 +283,7 @@ def test_rollback_rejects_invalid_state_reason_window_and_registry() -> None:
     active = service.activate_ruleset(ruleset, releases, activated_at=NOW)
     replacement = ruleset.model_copy(update={"status": RulesetStatus.RETIRED})
     retired_releases = tuple(
-        item.model_copy(update={"status": ReleaseStatus.RETIRED})
-        for item in active.active_releases
+        item.model_copy(update={"status": ReleaseStatus.RETIRED}) for item in active.active_releases
     )
 
     with pytest.raises(ValueError, match="reason"):
