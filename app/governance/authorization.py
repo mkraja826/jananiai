@@ -40,9 +40,7 @@ def require_governance_roles(
     missing = required - roles
     if missing:
         missing_names = sorted(role.value for role in missing)
-        raise GovernanceAuthorizationError(
-            f"Missing required governance roles: {missing_names}"
-        )
+        raise GovernanceAuthorizationError(f"Missing required governance roles: {missing_names}")
     return GovernancePrincipal(
         user_id=user.user_id,
         email=user.email,
