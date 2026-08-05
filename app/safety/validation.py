@@ -200,11 +200,12 @@ def _triggered_expectation(
 
 
 def _payload(**updates: object) -> SymptomAssessmentRequest:
-    return SymptomAssessmentRequest(
-        is_synthetic=True,
-        gestational_week=20,
-        **updates,
-    )
+    values: dict[str, object] = {
+        "is_synthetic": True,
+        "gestational_week": 20,
+    }
+    values.update(updates)
+    return SymptomAssessmentRequest(**values)
 
 
 def build_development_validation_dataset() -> SafetyRuleValidationDataset:
