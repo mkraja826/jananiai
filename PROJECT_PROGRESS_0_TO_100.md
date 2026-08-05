@@ -2,12 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 25%
+## Current verified progress: 27%
 
-Updated: 2026-08-04
-Branch: `phase-5/atomic-ruleset-activation`
-Latest verified implementation commit: `59c7c10`
-Draft PR: `#5`
+Updated: 2026-08-05
+Branch: `phase-6/reviewer-admin-validation-datasets`
+Latest verified implementation commit: `dcda56f`
+Draft PR: `#6`
 
 ## Foundation completed and verified
 
@@ -133,13 +133,44 @@ Draft PR: `#5`
 - [x] Documented the atomic ruleset architecture, failure modes, API boundary, and launch gates.
 - [x] GitHub Actions passed on `59c7c10`: Ruff lint and formatting, 34 safety tests with 97.44% safety-module coverage, 94 full-suite tests with 12 expected staging skips, Docker build, all migrations rebuilt from zero, and 12/12 local RLS/RPC/Storage/governance/atomic-ruleset integration tests.
 
+## Phase 6 reviewer administration and safety validation datasets completed and verified
+
+- [x] Added trusted governance-role claims sourced only from Supabase `app_metadata`.
+- [x] Explicitly ignored user-editable metadata for governance authorization.
+- [x] Added `reviewer_admin`, `safety_release_manager`, and `auditor` role contracts.
+- [x] Made malformed, unknown, non-string, and missing governance roles fail closed.
+- [x] Kept bearer tokens, trusted app metadata, and service-role secrets out of serialization and repr output.
+- [x] Added reviewer onboarding, credential reverification, deactivation, and result models.
+- [x] Required timezone-aware credential windows, conflict-of-interest attestation, attestation version, opaque evidence reference, and substantive reason.
+- [x] Added a governance administration API that is disabled by default.
+- [x] Required authentication, Supabase configuration, and a backend-only service-role key before the administration API can be enabled.
+- [x] Added protected reviewer onboarding, reverification, and deactivation routes.
+- [x] Added a service-role-backed repository so mobile and browser clients never receive the service-role key.
+- [x] Made reviewer identity, role, jurisdiction, and license reference immutable after onboarding.
+- [x] Allowed credential and lifecycle updates only through controlled database RPCs.
+- [x] Added append-only reviewer-onboarded, reviewer-reverified, and reviewer-deactivated governance events with administrator user IDs.
+- [x] Blocked reviewer deactivation while the reviewer has an approval on an active release.
+- [x] Kept end-user access to reviewer tables and lifecycle RPCs denied.
+- [x] Added executable true-positive, true-negative, boundary, interaction, and regression categories.
+- [x] Added 35 synthetic validation cases: five categories for each of seven development warning rules.
+- [x] Added exact expected triggered-rule sets, highest severity, and LLM-blocking assertions.
+- [x] Added free-text regression cases proving notes cannot trigger deterministic rules without structured fields.
+- [x] Added fail-closed checks for duplicate cases, incomplete rule coverage, missing categories, real-data payloads, and invalid expectations.
+- [x] Added per-case mismatch reports and per-rule case counts.
+- [x] Added HTTP, repository, authorization, model, configuration, migration, and local-Supabase lifecycle tests.
+- [x] Documented reviewer authority, evidence handling, validation categories, API boundaries, and remaining clinical gates.
+- [x] GitHub Actions passed on `dcda56f`: Ruff lint and formatting, 49 safety tests with 96.33% safety-module coverage, 149 full-suite tests with 13 expected staging skips, Docker build, all migrations rebuilt from zero, and 13/13 local RLS/RPC/Storage/governance/reviewer-lifecycle integration tests.
+
 ## Current limitations
 
-- No licensed clinician identity or credential has been entered into Janani AI.
+- No real licensed clinician has been onboarded through the reviewer administration flow.
+- No real reviewer credential or evidence document has been stored or verified.
+- The governance administration API remains disabled by default and has only synthetic validation.
 - No warning rule has been reviewed or approved by a licensed clinician.
 - Every current safety candidate contains development-placeholder provenance and cannot be activated.
 - Current English and Telugu escalation wording remains development-only and not clinically approved.
-- Atomic ruleset controls are validated only with synthetic releases in isolated local infrastructure.
+- The 35 validation cases are synthetic engineering regression checks, not clinical validation or performance evidence.
+- Atomic ruleset and reviewer-lifecycle controls are validated only in isolated local infrastructure.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
@@ -151,18 +182,18 @@ Draft PR: `#5`
 - No caregiver sharing or permissions model is implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: 25–30% — clinically reviewed deterministic safety rules
+## Next milestone: 27–30% — clinical authorisation and hosted rehearsal
 
-- Establish the authorised reviewer onboarding, conflict-of-interest, and operating policies.
+- Approve the reviewer-onboarding, conflict-of-interest, credential-verification, evidence-retention, and governance operating procedures.
 - Verify real obstetrician, clinical-safety, and Telugu-language reviewer credentials outside source control.
 - Replace development placeholders with current clinician-reviewed sources and exact sections.
-- Document rationale and applicability boundaries for each warning rule.
-- Review English and Telugu escalation wording with clinical and language reviewers.
-- Add true-positive, false-positive, boundary, interaction, and regression datasets for each candidate.
-- Add controlled administration APIs that never expose the service-role key to mobile clients.
-- Rehearse incident response and emergency ruleset rollback.
-- Repeat the complete governance and atomic-ruleset workflow in an isolated hosted staging environment.
-- Keep every rule inactive until all required reviews, datasets, staging tests, and launch gates pass.
+- Document and clinically approve the rationale, severity, and applicability boundaries for every warning rule.
+- Review and approve English and Telugu escalation wording with qualified clinical and language reviewers.
+- Expand the synthetic datasets with independently authored ambiguity, missing-data, adversarial, and cross-rule cases.
+- Obtain reviewer sign-off on expected results independently of the implementation team.
+- Rehearse incident response, reviewer deactivation, release retirement, and emergency ruleset rollback.
+- Repeat the complete governance, reviewer, dataset, release, and atomic-ruleset workflow in isolated hosted staging.
+- Keep every rule inactive until all reviews, datasets, hosted tests, and launch gates pass.
 
 ## Revised roadmap allocation
 
@@ -183,6 +214,10 @@ Draft PR: `#5`
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-05 — 27%
+
+Built and verified controlled reviewer administration and executable safety validation datasets on `phase-6/reviewer-admin-validation-datasets`. Added trusted `app_metadata` authorization, disabled-by-default backend administration routes, service-role-only reviewer lifecycle RPCs, conflict-of-interest and evidence-reference controls, immutable reviewer identity, active-release deactivation protection, append-only lifecycle events, and 35 synthetic true-positive, true-negative, boundary, interaction, and regression cases. GitHub Actions passed on `dcda56f`: 49 safety tests with 96.33% coverage, 149 full-suite tests, 13 expected staging skips, Docker build, all migrations rebuilt from zero, and 13/13 local integration tests. No real clinician, credential, patient data, source approval, or hosted project was introduced.
 
 ### 2026-08-04 — 25%
 

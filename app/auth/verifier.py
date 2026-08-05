@@ -52,11 +52,15 @@ class SupabaseAuthVerifier:
 
         try:
             payload = response.json()
+            app_metadata = payload.get("app_metadata") or {}
+            if not isinstance(app_metadata, dict):
+                raise TypeError("app_metadata must be an object")
             return AuthenticatedUser(
                 user_id=UUID(payload["id"]),
                 access_token=SecretStr(access_token),
                 email=payload.get("email"),
                 role=payload.get("role") or "authenticated",
+                app_metadata=app_metadata,
                 synthetic=False,
             )
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
