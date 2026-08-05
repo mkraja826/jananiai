@@ -19,9 +19,7 @@ def test_auth_verifier_loads_server_controlled_app_metadata() -> None:
                 "id": str(USER_ID),
                 "email": "admin@example.test",
                 "role": "authenticated",
-                "app_metadata": {
-                    "janani_governance_roles": ["reviewer_admin", "auditor"]
-                },
+                "app_metadata": {"janani_governance_roles": ["reviewer_admin", "auditor"]},
                 "user_metadata": {"janani_governance_roles": ["safety_release_manager"]},
             },
         )
@@ -38,9 +36,7 @@ def test_auth_verifier_loads_server_controlled_app_metadata() -> None:
         await client.aclose()
 
         assert user.user_id == USER_ID
-        assert user.app_metadata == {
-            "janani_governance_roles": ["reviewer_admin", "auditor"]
-        }
+        assert user.app_metadata == {"janani_governance_roles": ["reviewer_admin", "auditor"]}
         assert "safety_release_manager" not in str(user.app_metadata)
         assert "synthetic-token" not in repr(user)
         assert "janani_governance_roles" not in repr(user)
