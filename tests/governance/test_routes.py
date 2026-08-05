@@ -200,6 +200,4 @@ def test_governance_repository_errors_are_safely_mapped() -> None:
     response = client.post("/v1/governance/reviewers", json=onboarding_payload())
 
     assert response.status_code == 409
-    assert response.json()["detail"] == (
-        "Governance operation conflicts with an existing record"
-    )
+    assert response.json()["detail"] == ("Governance operation conflicts with an existing record")
