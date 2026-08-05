@@ -124,9 +124,7 @@ def test_governance_routes_are_hidden_when_disabled() -> None:
 def test_governance_routes_require_trusted_reviewer_admin_role() -> None:
     app = create_app(settings=admin_settings())
     repository = FakeGovernanceRepository()
-    app.dependency_overrides[get_current_user] = lambda: verified_user(
-        GovernanceAdminRole.AUDITOR
-    )
+    app.dependency_overrides[get_current_user] = lambda: verified_user(GovernanceAdminRole.AUDITOR)
     app.dependency_overrides[get_governance_admin_repository] = lambda: repository
     client = TestClient(app)
 
@@ -160,9 +158,7 @@ def test_reviewer_admin_can_onboard_reverify_and_deactivate() -> None:
     )
     deactivate = client.post(
         f"/v1/governance/reviewers/{REVIEWER_ID}/deactivate",
-        json={
-            "reason": "Synthetic reviewer deactivation validates the protected HTTP boundary."
-        },
+        json={"reason": "Synthetic reviewer deactivation validates the protected HTTP boundary."},
     )
 
     assert onboard.status_code == 201
