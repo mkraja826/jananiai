@@ -29,15 +29,11 @@ pytestmark = [
     ),
 ]
 
-ONBOARD_REASON = (
-    "Synthetic onboarding validates the controlled reviewer administration RPC."
-)
+ONBOARD_REASON = "Synthetic onboarding validates the controlled reviewer administration RPC."
 REVERIFY_REASON = (
     "Synthetic reverification validates controlled credential renewal and audit history."
 )
-DEACTIVATE_REASON = (
-    "Synthetic deactivation validates controlled reviewer lifecycle termination."
-)
+DEACTIVATE_REASON = "Synthetic deactivation validates controlled reviewer lifecycle termination."
 DUPLICATE_DEACTIVATE_REASON = (
     "Synthetic duplicate deactivation must fail closed after reviewer termination."
 )
