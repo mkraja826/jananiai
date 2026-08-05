@@ -29,6 +29,19 @@ pytestmark = [
     ),
 ]
 
+ONBOARD_REASON = (
+    "Synthetic onboarding validates the controlled reviewer administration RPC."
+)
+REVERIFY_REASON = (
+    "Synthetic reverification validates controlled credential renewal and audit history."
+)
+DEACTIVATE_REASON = (
+    "Synthetic deactivation validates controlled reviewer lifecycle termination."
+)
+DUPLICATE_DEACTIVATE_REASON = (
+    "Synthetic duplicate deactivation must fail closed after reviewer termination."
+)
+
 
 def rest_url(path: str) -> str:
     assert SUPABASE_URL is not None
@@ -111,7 +124,7 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
             "p_conflict_of_interest_attested_at": attested_at.isoformat(),
             "p_attestation_version": "coi-v1",
             "p_evidence_reference": "vault://synthetic/reviewer/integration",
-            "p_reason": "Synthetic onboarding validates the controlled reviewer administration RPC.",
+            "p_reason": ONBOARD_REASON,
         },
         timeout=20,
     )
@@ -131,7 +144,7 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
             "p_conflict_of_interest_attested_at": attested_at.isoformat(),
             "p_attestation_version": "coi-v1",
             "p_evidence_reference": "vault://synthetic/reviewer/integration",
-            "p_reason": "Synthetic onboarding validates the controlled reviewer administration RPC.",
+            "p_reason": ONBOARD_REASON,
         },
     )
 
@@ -167,19 +180,22 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
 
     new_verified_at = now
     new_expires_at = now + timedelta(days=365)
-    assert call_service_rpc(
-        "reverify_janani_clinical_reviewer",
-        {
-            "p_actor_user_id": USER_A_ID,
-            "p_reviewer_id": reviewer_id,
-            "p_credential_verified_at": new_verified_at.isoformat(),
-            "p_credential_expires_at": new_expires_at.isoformat(),
-            "p_conflict_of_interest_attested_at": attested_at.isoformat(),
-            "p_attestation_version": "coi-v2",
-            "p_evidence_reference": "vault://synthetic/reviewer/integration/v2",
-            "p_reason": "Synthetic reverification validates controlled credential renewal and audit history.",
-        },
-    ) == reviewer_id
+    assert (
+        call_service_rpc(
+            "reverify_janani_clinical_reviewer",
+            {
+                "p_actor_user_id": USER_A_ID,
+                "p_reviewer_id": reviewer_id,
+                "p_credential_verified_at": new_verified_at.isoformat(),
+                "p_credential_expires_at": new_expires_at.isoformat(),
+                "p_conflict_of_interest_attested_at": attested_at.isoformat(),
+                "p_attestation_version": "coi-v2",
+                "p_evidence_reference": "vault://synthetic/reviewer/integration/v2",
+                "p_reason": REVERIFY_REASON,
+            },
+        )
+        == reviewer_id
+    )
 
     reverified = read_service_rows(
         "clinical_safety_reviewers",
@@ -195,14 +211,17 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
         }
     ]
 
-    assert call_service_rpc(
-        "deactivate_janani_clinical_reviewer",
-        {
-            "p_actor_user_id": USER_A_ID,
-            "p_reviewer_id": reviewer_id,
-            "p_reason": "Synthetic deactivation validates controlled reviewer lifecycle termination.",
-        },
-    ) == reviewer_id
+    assert (
+        call_service_rpc(
+            "deactivate_janani_clinical_reviewer",
+            {
+                "p_actor_user_id": USER_A_ID,
+                "p_reviewer_id": reviewer_id,
+                "p_reason": DEACTIVATE_REASON,
+            },
+        )
+        == reviewer_id
+    )
 
     deactivated = read_service_rows(
         "clinical_safety_reviewers",
@@ -214,9 +233,7 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
             "id": reviewer_id,
             "active": False,
             "deactivated_by_user_id": USER_A_ID,
-            "deactivation_reason": (
-                "Synthetic deactivation validates controlled reviewer lifecycle termination."
-            ),
+            "deactivation_reason": DEACTIVATE_REASON,
         }
     ]
 
@@ -226,7 +243,7 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
         json={
             "p_actor_user_id": USER_A_ID,
             "p_reviewer_id": reviewer_id,
-            "p_reason": "Synthetic duplicate deactivation must fail closed after reviewer termination.",
+            "p_reason": DUPLICATE_DEACTIVATE_REASON,
         },
         timeout=20,
     )
@@ -237,6 +254,7 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
         "event_type,aggregate_id,actor_user_id",
         aggregate_type="eq.reviewer",
         aggregate_id=f"eq.{reviewer_id}",
+        order="occurred_at.asc",
     )
     assert [item["event_type"] for item in events] == [
         "reviewer_onboarded",
