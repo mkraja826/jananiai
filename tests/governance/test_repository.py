@@ -187,9 +187,7 @@ def test_repository_maps_postgrest_failures(
 
 def test_repository_rejects_invalid_rpc_response_and_transport_failure() -> None:
     invalid_client = httpx.AsyncClient(
-        transport=httpx.MockTransport(
-            lambda _request: httpx.Response(200, json="not-a-uuid")
-        )
+        transport=httpx.MockTransport(lambda _request: httpx.Response(200, json="not-a-uuid"))
     )
     invalid_repository = SupabaseGovernanceAdminRepository(
         supabase_url="https://example.supabase.co",
