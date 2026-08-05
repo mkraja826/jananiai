@@ -25,8 +25,11 @@ class Settings(BaseSettings):
     auth_required: bool = False
     supabase_url: str | None = None
     supabase_publishable_key: SecretStr | None = None
+    supabase_service_role_key: SecretStr | None = None
     supabase_request_timeout_seconds: float = 8.0
     synthetic_user_id: UUID = UUID("00000000-0000-0000-0000-000000000001")
+
+    governance_admin_api_enabled: bool = False
 
     @model_validator(mode="after")
     def enforce_runtime_restrictions(self) -> "Settings":
@@ -44,6 +47,16 @@ class Settings(BaseSettings):
             raise ValueError(
                 "Supabase URL and publishable key are required in staging and production"
             )
+
+        if self.governance_admin_api_enabled:
+            if not self.auth_required:
+                raise ValueError("Governance administration requires authentication")
+            if not self.supabase_configured:
+                raise ValueError("Governance administration requires Supabase configuration")
+            if not self.supabase_service_role_configured:
+                raise ValueError(
+                    "Governance administration requires a backend-only Supabase service-role key"
+                )
         return self
 
     @property
@@ -57,6 +70,13 @@ class Settings(BaseSettings):
             and self.supabase_url.strip()
             and self.supabase_publishable_key
             and self.supabase_publishable_key.get_secret_value().strip()
+        )
+
+    @property
+    def supabase_service_role_configured(self) -> bool:
+        return bool(
+            self.supabase_service_role_key
+            and self.supabase_service_role_key.get_secret_value().strip()
         )
 
     @property
