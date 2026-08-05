@@ -1,10 +1,11 @@
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class AuthenticatedUser(BaseModel):
-    """Verified request identity. The bearer token is excluded from serialization and repr."""
+    """Verified request identity. Secrets and authorization metadata never serialize."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -12,6 +13,7 @@ class AuthenticatedUser(BaseModel):
     access_token: SecretStr = Field(exclude=True, repr=False)
     email: str | None = None
     role: str = "authenticated"
+    app_metadata: dict[str, Any] = Field(default_factory=dict, exclude=True, repr=False)
     synthetic: bool = False
 
     @property
