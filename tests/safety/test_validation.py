@@ -62,9 +62,7 @@ def test_development_dataset_covers_every_rule_and_required_category() -> None:
     assert set(counts) == expected_rule_ids
     assert set(counts.values()) == {5}
     for rule_id in expected_rule_ids:
-        categories = {
-            case.category for case in dataset.cases if case.target_rule_id == rule_id
-        }
+        categories = {case.category for case in dataset.cases if case.target_rule_id == rule_id}
         assert categories == REQUIRED_CASE_CATEGORIES
 
 
@@ -223,9 +221,7 @@ def test_dataset_rejects_duplicate_case_ids() -> None:
 
 def test_dataset_requires_every_development_rule() -> None:
     dataset = build_development_validation_dataset()
-    reduced = tuple(
-        case for case in dataset.cases if case.target_rule_id != "DEV-SEIZURE-001"
-    )
+    reduced = tuple(case for case in dataset.cases if case.target_rule_id != "DEV-SEIZURE-001")
 
     with pytest.raises(ValidationError, match="cover every development rule"):
         SafetyRuleValidationDataset(
