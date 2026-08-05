@@ -86,7 +86,7 @@ def test_reviewer_onboarding_reverification_and_deactivation_are_controlled() ->
     verified_at = now - timedelta(minutes=1)
     expires_at = now + timedelta(days=180)
     attested_at = now - timedelta(minutes=2)
-    license_reference = f“SYNTHETIC-REVIEWER-{uuid4()}”
+    license_reference = f"SYNTHETIC-REVIEWER-{uuid4()}"
 
     denied_read = httpx.get(
         rest_url("clinical_safety_reviewers"),
