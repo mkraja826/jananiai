@@ -63,6 +63,7 @@ def reverification_request() -> ReviewerCredentialReverificationRequest:
 def test_repository_uses_service_role_only_and_maps_all_actions() -> None:
     reviewer_id = uuid4()
     actor = principal()
+    onboarding = onboarding_request()
     captured: list[tuple[str, dict[str, object], dict[str, str]]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -78,7 +79,7 @@ def test_repository_uses_service_role_only_and_maps_all_actions() -> None:
     )
 
     async def exercise() -> None:
-        onboarded = await repository.onboard_reviewer(actor, onboarding_request())
+        onboarded = await repository.onboard_reviewer(actor, onboarding)
         reverified = await repository.reverify_reviewer(
             actor,
             reviewer_id,
@@ -113,9 +114,7 @@ def test_repository_uses_service_role_only_and_maps_all_actions() -> None:
         assert payload["p_actor_user_id"] == str(actor.user_id)
         assert "verified-token" not in json.dumps(payload)
     assert captured[0][1]["p_role"] == ReviewerRole.CLINICAL_SAFETY.value
-    assert captured[0][1]["p_reviewer_user_id"] == str(
-        onboarding_request().reviewer_user_id
-    )
+    assert captured[0][1]["p_reviewer_user_id"] == str(onboarding.reviewer_user_id)
     assert captured[1][1]["p_reviewer_id"] == str(reviewer_id)
     assert captured[2][1]["p_reviewer_id"] == str(reviewer_id)
 
