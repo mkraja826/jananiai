@@ -171,9 +171,7 @@ class SafetyValidationRunner:
         if set(decision.triggered_rule_ids) != set(case.expected.exact_rule_ids):
             expected_ids = sorted(case.expected.exact_rule_ids)
             actual_ids = sorted(decision.triggered_rule_ids)
-            mismatches.append(
-                f"triggered rule IDs expected {expected_ids} but got {actual_ids}"
-            )
+            mismatches.append(f"triggered rule IDs expected {expected_ids} but got {actual_ids}")
         if decision.blocks_llm is not case.expected.blocks_llm:
             mismatches.append(
                 f"blocks_llm expected {case.expected.blocks_llm} but got {decision.blocks_llm}"
@@ -264,8 +262,7 @@ def build_development_validation_dataset() -> SafetyRuleValidationDataset:
                     payload=_payload(**trigger),
                     expected=_triggered_expectation(severity, rule_id),
                     rationale=(
-                        "The target structured boolean is true and must trigger "
-                        "exactly its rule."
+                        "The target structured boolean is true and must trigger exactly its rule."
                     ),
                 ),
                 SafetyValidationCase(
