@@ -144,9 +144,7 @@ def test_no_active_destination_uses_bounded_retryable_queue_outcome() -> None:
 
 
 def test_any_retryable_destination_keeps_job_retryable_when_none_sent() -> None:
-    result, queue, _ = run_dispatch(
-        ["mock-terminal:bad-token", "mock-retry:temporary-token"]
-    )
+    result, queue, _ = run_dispatch(["mock-terminal:bad-token", "mock-retry:temporary-token"])
 
     assert result.disposition is NotificationTransportDisposition.RETRYABLE_FAILURE
     assert result.retryable_failure_count == 1
@@ -156,9 +154,7 @@ def test_any_retryable_destination_keeps_job_retryable_when_none_sent() -> None:
 
 
 def test_all_terminal_destinations_fail_job_terminally() -> None:
-    result, queue, _ = run_dispatch(
-        ["mock-terminal:first", "mock-terminal:second"]
-    )
+    result, queue, _ = run_dispatch(["mock-terminal:first", "mock-terminal:second"])
 
     assert result.disposition is NotificationTransportDisposition.TERMINAL_FAILURE
     assert result.terminal_failure_count == 2
