@@ -73,7 +73,6 @@ def test_reminder_materialization_claim_retry_response_and_cancellation() -> Non
             "source": "user_entered",
             "confirmed": True,
             "active": True,
-            "synthetic": True,
         },
         timeout=20,
     )
