@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.config import Settings
 from app.notifications.dispatch import NotificationDestinationWorker, ReminderNotificationDispatcher
+from app.notifications.expo import ExpoPushTransport
 from app.notifications.models import NotificationTransportDisposition
 from app.notifications.transport import MockNotificationTransport, NotificationTransport
 from app.notifications.worker import SupabaseNotificationWorkerRepository
@@ -153,8 +154,6 @@ async def run_configured_reminder_worker_once(
         raise ReminderWorkerConfigurationError(
             "Reminder worker backend configuration is incomplete"
         )
-    if settings.reminder_worker_transport != "mock":
-        raise ReminderWorkerConfigurationError("Only the mock reminder transport is available")
 
     service_role_key = settings.supabase_service_role_key.get_secret_value()
     queue = SupabaseReminderDeliveryWorkerRepository(
@@ -167,10 +166,27 @@ async def run_configured_reminder_worker_once(
         service_role_key=service_role_key,
         timeout_seconds=settings.supabase_request_timeout_seconds,
     )
+
+    expo_transport: ExpoPushTransport | None = None
+    if settings.reminder_worker_transport == "mock":
+        transport: NotificationTransport = MockNotificationTransport()
+    elif settings.reminder_worker_transport == "expo":
+        if settings.expo_push_access_token is None:
+            raise ReminderWorkerConfigurationError(
+                "Expo reminder transport backend configuration is incomplete"
+            )
+        expo_transport = ExpoPushTransport(
+            access_token=settings.expo_push_access_token,
+            timeout_seconds=settings.expo_push_timeout_seconds,
+        )
+        transport = expo_transport
+    else:
+        raise ReminderWorkerConfigurationError("Unsupported reminder transport")
+
     runtime = ReminderWorkerRuntime(
         queue=queue,
         destinations=destinations,
-        transport=MockNotificationTransport(),
+        transport=transport,
         batch_size=settings.reminder_worker_batch_size,
         lookback_minutes=settings.reminder_worker_materialization_lookback_minutes,
         horizon_minutes=settings.reminder_worker_materialization_horizon_minutes,
@@ -179,5 +195,7 @@ async def run_configured_reminder_worker_once(
     try:
         return await runtime.run_once(now=now or datetime.now(UTC))
     finally:
+        if expo_transport is not None:
+            await expo_transport.aclose()
         await destinations.aclose()
         await queue.aclose()

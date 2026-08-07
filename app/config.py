@@ -32,10 +32,13 @@ class Settings(BaseSettings):
     governance_admin_api_enabled: bool = False
 
     reminder_worker_enabled: bool = False
-    reminder_worker_transport: Literal["mock"] = "mock"
+    reminder_worker_transport: Literal["mock", "expo"] = "mock"
     reminder_worker_batch_size: int = Field(default=50, ge=1, le=100)
     reminder_worker_materialization_lookback_minutes: int = Field(default=15, ge=0, le=1440)
     reminder_worker_materialization_horizon_minutes: int = Field(default=1440, ge=1, le=10080)
+
+    expo_push_access_token: SecretStr | None = None
+    expo_push_timeout_seconds: float = 8.0
 
     @model_validator(mode="after")
     def enforce_runtime_restrictions(self) -> "Settings":
@@ -45,6 +48,8 @@ class Settings(BaseSettings):
             raise ValueError("Only the mock LLM provider is allowed in free-first mode")
         if self.supabase_request_timeout_seconds <= 0:
             raise ValueError("Supabase request timeout must be positive")
+        if self.expo_push_timeout_seconds <= 0:
+            raise ValueError("Expo push timeout must be positive")
 
         protected_environment = self.environment in {"staging", "production"}
         if protected_environment and not self.auth_required:
@@ -72,6 +77,10 @@ class Settings(BaseSettings):
             if self.environment == "production":
                 raise ValueError(
                     "Production reminder worker remains blocked until the production launch gate"
+                )
+            if self.reminder_worker_transport == "expo" and not self.expo_push_configured:
+                raise ValueError(
+                    "Expo reminder transport requires a backend-only Expo push access token"
                 )
         return self
 
@@ -101,6 +110,12 @@ class Settings(BaseSettings):
             self.supabase_url
             and self.supabase_url.strip()
             and self.supabase_service_role_configured
+        )
+
+    @property
+    def expo_push_configured(self) -> bool:
+        return bool(
+            self.expo_push_access_token and self.expo_push_access_token.get_secret_value().strip()
         )
 
     @property
