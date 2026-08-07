@@ -4,8 +4,8 @@ from uuid import UUID
 
 from app.attachments import (
     AttachmentCaptureSource,
+    AttachmentIntegrityStatus,
     AttachmentKind,
-    AttachmentRegistration,
     AttachmentSummary,
     ConfirmationStatus,
     ExtractionStatus,
@@ -16,6 +16,9 @@ from app.persistence.client import SupabasePersistenceError, SupabaseUserRestCli
 from app.pregnancy.models import (
     EncounterType,
     ObservationKind,
+    PregnancyCompletionCreate,
+    PregnancyCompletionEvent,
+    PregnancyCompletionType,
     PregnancyDatingSource,
     PregnancyEncounter,
     PregnancyEncounterCreate,
@@ -44,11 +47,11 @@ class PregnancyRepository(Protocol):
         payload: PregnancyEncounterCreate,
     ) -> PregnancyEncounter: ...
 
-    async def register_attachment(
+    async def record_completion(
         self,
         user: AuthenticatedUser,
-        payload: AttachmentRegistration,
-    ) -> AttachmentSummary: ...
+        payload: PregnancyCompletionCreate,
+    ) -> PregnancyCompletionEvent: ...
 
     async def get_timeline(self, user: AuthenticatedUser) -> PregnancyTimeline: ...
 
@@ -171,45 +174,37 @@ class SupabasePregnancyRepository:
         )
         return self._map_encounter(rows[0])
 
-    async def register_attachment(
+    async def record_completion(
         self,
         user: AuthenticatedUser,
-        payload: AttachmentRegistration,
-    ) -> AttachmentSummary:
+        payload: PregnancyCompletionCreate,
+    ) -> PregnancyCompletionEvent:
         self._ensure_identity(user)
-        if not payload.storage_object_path.startswith(f"{user.user_id}/"):
-            raise SupabasePersistenceError(
-                "Attachment storage path must be inside the authenticated user's private folder",
-                status_code=403,
-            )
-        if payload.pregnancy_id is not None:
-            await self._require_owned_pregnancy(user.user_id, payload.pregnancy_id)
-
-        rows = await self._client.insert(
-            "attachment_records",
+        data = await self._client.rpc(
+            "record_janani_pregnancy_completion",
             {
-                "user_id": str(user.user_id),
-                "pregnancy_id": str(payload.pregnancy_id) if payload.pregnancy_id else None,
-                "kind": payload.kind.value,
-                "mime_type": payload.mime_type,
-                "storage_object_path": payload.storage_object_path,
-                "document_date": (
-                    payload.document_date.isoformat() if payload.document_date else None
+                "p_pregnancy_id": str(payload.pregnancy_id),
+                "p_occurred_at": payload.occurred_at.isoformat(),
+                "p_completion_type": payload.completion_type.value,
+                "p_source": payload.source.value,
+                "p_confirmed": payload.confirmed,
+                "p_note": payload.note,
+                "p_supersedes_completion_event_id": (
+                    str(payload.supersedes_completion_event_id)
+                    if payload.supersedes_completion_event_id
+                    else None
                 ),
-                "display_label": payload.display_label,
-                "capture_source": payload.capture_source.value,
-                "file_size_bytes": payload.file_size_bytes,
-                "content_sha256": (
-                    payload.content_sha256.lower() if payload.content_sha256 else None
-                ),
+                "p_synthetic": payload.synthetic,
             },
         )
-        return self._map_attachment_summary(rows[0], payload.synthetic)
+        if not isinstance(data, dict):
+            raise SupabasePersistenceError("Pregnancy completion RPC returned an invalid response")
+        return self._map_completion(data)
 
     async def get_timeline(self, user: AuthenticatedUser) -> PregnancyTimeline:
-        pregnancy = await self.get_active_episode(user)
+        pregnancy = await self._get_latest_episode(user)
         pregnancy_id = pregnancy.pregnancy_id
-        observations, encounters, appointments, attachments = await asyncio.gather(
+        observations, encounters, appointments, attachments, completions = await asyncio.gather(
             self._client.select(
                 "pregnancy_observations",
                 params={
@@ -250,6 +245,16 @@ class SupabasePregnancyRepository:
                     "limit": "100",
                 },
             ),
+            self._client.select(
+                "pregnancy_completion_events",
+                params={
+                    "select": "*",
+                    "user_id": f"eq.{user.user_id}",
+                    "pregnancy_id": f"eq.{pregnancy_id}",
+                    "order": "occurred_at.desc",
+                    "limit": "20",
+                },
+            ),
         )
         return build_pregnancy_timeline(
             pregnancy=pregnancy,
@@ -260,7 +265,23 @@ class SupabasePregnancyRepository:
                 self._map_attachment_summary(row, bool(row.get("synthetic", True)))
                 for row in attachments
             ],
+            completions=[self._map_completion(row) for row in completions],
         )
+
+    async def _get_latest_episode(self, user: AuthenticatedUser) -> PregnancyEpisode:
+        self._ensure_identity(user)
+        rows = await self._client.select(
+            "pregnancies",
+            params={
+                "select": "*",
+                "user_id": f"eq.{user.user_id}",
+                "order": "updated_at.desc",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            raise SupabasePersistenceError("No pregnancy episode was found", status_code=404)
+        return self._map_episode(rows[0])
 
     async def _require_owned_pregnancy(self, user_id: UUID, pregnancy_id: UUID) -> None:
         rows = await self._client.select(
@@ -378,6 +399,24 @@ class SupabasePregnancyRepository:
             synthetic=bool(row.get("synthetic", True)),
         )
 
+    def _map_completion(self, row: dict) -> PregnancyCompletionEvent:
+        return PregnancyCompletionEvent(
+            completion_event_id=UUID(row["id"]),
+            pregnancy_id=UUID(row["pregnancy_id"]),
+            occurred_at=row["occurred_at"],
+            completion_type=PregnancyCompletionType(row["completion_type"]),
+            source=RecordSource(row["source"]),
+            confirmed=bool(row.get("confirmed", False)),
+            note=row.get("note"),
+            supersedes_completion_event_id=(
+                UUID(row["supersedes_completion_event_id"])
+                if row.get("supersedes_completion_event_id")
+                else None
+            ),
+            synthetic=bool(row.get("synthetic", True)),
+            created_at=row.get("created_at"),
+        )
+
     def _map_attachment_summary(self, row: dict, synthetic: bool) -> AttachmentSummary:
         return AttachmentSummary(
             attachment_id=UUID(row["id"]),
@@ -387,6 +426,8 @@ class SupabasePregnancyRepository:
             storage_object_path=row["storage_object_path"],
             extraction_status=ExtractionStatus(row.get("extraction_status", "not_started")),
             confirmation_status=ConfirmationStatus(row.get("confirmation_status", "unconfirmed")),
+            integrity_status=AttachmentIntegrityStatus(row.get("integrity_status", "unverified")),
+            integrity_verified_at=row.get("integrity_verified_at"),
             document_date=row.get("document_date"),
             display_label=row.get("display_label"),
             capture_source=AttachmentCaptureSource(row.get("capture_source", "file_upload")),
