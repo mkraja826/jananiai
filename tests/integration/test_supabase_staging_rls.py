@@ -1,3 +1,4 @@
+import hashlib
 import os
 from uuid import UUID, uuid4
 
@@ -90,30 +91,61 @@ def insert_pregnancy(token: str, owner_id: str, *, week: int = 20) -> str:
     return pregnancy_id
 
 
-def insert_attachment(owner_id: str, pregnancy_id: str) -> str:
-    """Backend-only fixture creation; authenticated direct attachment inserts stay denied."""
+def insert_attachment(token: str, owner_id: str, pregnancy_id: str) -> str:
+    """Create a verified synthetic attachment through the real secure upload handshake."""
 
-    attachment_id = str(uuid4())
-    response = httpx.post(
-        rest_url("attachment_records"),
-        headers=service_headers(prefer="return=representation"),
+    assert SUPABASE_URL is not None
+    content = b"%PDF-1.4 synthetic local RLS attachment fixture"
+    digest = hashlib.sha256(content).hexdigest()
+    intent_response = httpx.post(
+        rest_url("rpc/request_janani_attachment_upload"),
+        headers=headers(token),
         json={
-            "id": attachment_id,
-            "user_id": owner_id,
-            "pregnancy_id": pregnancy_id,
-            "kind": "lab_report",
-            "mime_type": "application/pdf",
-            "storage_object_path": f"{owner_id}/fixtures/{attachment_id}.pdf",
-            "file_size_bytes": 28,
-            "content_sha256": "a" * 64,
-            "integrity_status": "verified",
-            "integrity_verified_at": "2026-08-07T10:00:00Z",
-            "synthetic": True,
+            "p_pregnancy_id": pregnancy_id,
+            "p_kind": "lab_report",
+            "p_mime_type": "application/pdf",
+            "p_file_size_bytes": len(content),
+            "p_content_sha256": digest,
+            "p_document_date": "2026-08-07",
+            "p_display_label": "Synthetic local fixture",
+            "p_capture_source": "file_upload",
+            "p_synthetic": True,
         },
         timeout=20,
     )
-    response.raise_for_status()
-    return attachment_id
+    intent_response.raise_for_status()
+    intent = intent_response.json()
+    assert intent["storage_object_path"].startswith(f"{owner_id}/uploads/")
+
+    object_url = (
+        f"{SUPABASE_URL}/storage/v1/object/{intent['bucket_id']}/{intent['storage_object_path']}"
+    )
+    upload = httpx.post(
+        object_url,
+        headers=headers(token, content_type="application/pdf"),
+        content=content,
+        timeout=20,
+    )
+    upload.raise_for_status()
+
+    finalize = httpx.post(
+        rest_url("rpc/finalize_janani_attachment_upload"),
+        headers=headers(token),
+        json={"p_intent_id": intent["id"]},
+        timeout=20,
+    )
+    finalize.raise_for_status()
+    attachment = finalize.json()
+
+    verified = httpx.post(
+        rest_url("rpc/verify_janani_attachment_integrity"),
+        headers=service_headers(),
+        json={"p_attachment_id": attachment["id"], "p_actual_sha256": digest},
+        timeout=20,
+    )
+    verified.raise_for_status()
+    assert verified.json() == "verified"
+    return attachment["id"]
 
 
 def test_tokens_resolve_to_distinct_synthetic_users() -> None:
@@ -249,7 +281,7 @@ def test_related_records_cannot_link_to_another_users_pregnancy() -> None:
 def test_internal_tables_reject_direct_authenticated_writes() -> None:
     assert USER_A_TOKEN and USER_A_ID
     pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID, week=23)
-    attachment_id = insert_attachment(USER_A_ID, pregnancy_id)
+    attachment_id = insert_attachment(USER_A_TOKEN, USER_A_ID, pregnancy_id)
     attempts = [
         (
             "context_assembly_events",
@@ -356,7 +388,7 @@ def test_authenticated_audit_rpcs_are_owner_scoped() -> None:
 def test_extraction_worker_and_user_confirmation_are_separated() -> None:
     assert USER_A_TOKEN and USER_B_TOKEN and USER_A_ID
     pregnancy_id = insert_pregnancy(USER_A_TOKEN, USER_A_ID, week=24)
-    attachment_id = insert_attachment(USER_A_ID, pregnancy_id)
+    attachment_id = insert_attachment(USER_A_TOKEN, USER_A_ID, pregnancy_id)
     extraction_id = str(uuid4())
     rpc_payload = {
         "p_extraction_id": extraction_id,
