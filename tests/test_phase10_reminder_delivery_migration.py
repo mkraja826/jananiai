@@ -1,6 +1,9 @@
 from pathlib import Path
 
 MIGRATION = Path("supabase/migrations/20260808000000_reminder_delivery_events.sql")
+DATA_MODE_MIGRATION = Path(
+    "supabase/migrations/20260808002000_bind_reminder_response_data_mode.sql"
+)
 
 
 def migration_sql() -> str:
@@ -54,3 +57,11 @@ def test_response_events_are_neutral_and_do_not_assert_dose_adherence() -> None:
     assert "('opened', 'acknowledged', 'dismissed', 'remind_later')" in sql
     assert "taken" not in sql.lower()
     assert "remind_later requires an explicit future remind_at time" in sql
+
+
+def test_response_data_mode_is_bound_to_the_original_delivery() -> None:
+    sql = DATA_MODE_MIGRATION.read_text(encoding="utf-8")
+
+    assert "p_synthetic is distinct from v_delivery.synthetic" in sql
+    assert "Reminder response data mode must match the delivery" in sql
+    assert "v_delivery.synthetic" in sql
