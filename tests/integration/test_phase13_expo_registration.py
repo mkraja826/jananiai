@@ -104,9 +104,7 @@ def test_expo_registration_is_guarded_and_raw_token_remains_backend_only() -> No
         timeout=20,
     )
     service_read.raise_for_status()
-    assert service_read.json() == [
-        {"id": device_id, "transport": "expo", "push_token": raw_token}
-    ]
+    assert service_read.json() == [{"id": device_id, "transport": "expo", "push_token": raw_token}]
 
     cross_user = register(
         USER_B_TOKEN,
