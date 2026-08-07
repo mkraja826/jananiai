@@ -77,6 +77,7 @@ def test_worker_materializes_claims_and_completes_opaque_jobs() -> None:
             delivery_id=DELIVERY_ID,
             claim_token=CLAIM_TOKEN,
             outcome=ReminderDispatchOutcome.SENT,
+            now=datetime(2030, 1, 1, 3, 0, 31, tzinfo=timezone.utc),
         )
 
         assert count == 2
