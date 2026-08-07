@@ -44,10 +44,14 @@ class PregnancyEpisode(BaseModel):
             and self.last_menstrual_period is None
         ):
             raise ValueError("User-reported LMP dating requires last_menstrual_period")
-        if self.dating_source in {
-            PregnancyDatingSource.CLINICIAN_ESTIMATED_DUE_DATE,
-            PregnancyDatingSource.ULTRASOUND_ESTIMATED_DUE_DATE,
-        } and self.estimated_due_date is None:
+        if (
+            self.dating_source
+            in {
+                PregnancyDatingSource.CLINICIAN_ESTIMATED_DUE_DATE,
+                PregnancyDatingSource.ULTRASOUND_ESTIMATED_DUE_DATE,
+            }
+            and self.estimated_due_date is None
+        ):
             raise ValueError("EDD-based dating requires estimated_due_date")
         if self.dating_confirmed and self.dating_source is PregnancyDatingSource.UNKNOWN:
             raise ValueError("Confirmed dating requires a recorded dating source")
