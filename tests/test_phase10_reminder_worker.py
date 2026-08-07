@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import httpx
@@ -66,18 +66,18 @@ def test_worker_materializes_claims_and_completes_opaque_jobs() -> None:
         )
 
         count = await repository.materialize(
-            window_start=datetime(2030, 1, 1, 2, 0, tzinfo=timezone.utc),
-            window_end=datetime(2030, 1, 1, 4, 0, tzinfo=timezone.utc),
+            window_start=datetime(2030, 1, 1, 2, 0, tzinfo=UTC),
+            window_end=datetime(2030, 1, 1, 4, 0, tzinfo=UTC),
         )
         claims = await repository.claim(
-            now=datetime(2030, 1, 1, 3, 0, 30, tzinfo=timezone.utc),
+            now=datetime(2030, 1, 1, 3, 0, 30, tzinfo=UTC),
             limit=10,
         )
         completed = await repository.complete(
             delivery_id=DELIVERY_ID,
             claim_token=CLAIM_TOKEN,
             outcome=ReminderDispatchOutcome.SENT,
-            now=datetime(2030, 1, 1, 3, 0, 31, tzinfo=timezone.utc),
+            now=datetime(2030, 1, 1, 3, 0, 31, tzinfo=UTC),
         )
 
         assert count == 2
