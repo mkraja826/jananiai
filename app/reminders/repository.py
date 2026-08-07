@@ -238,14 +238,10 @@ class SupabaseReminderRepository:
             delivery_id=UUID(row["id"]),
             reminder_kind=ReminderKind(row["reminder_kind"]),
             medication_reminder_id=(
-                UUID(row["medication_reminder_id"])
-                if row.get("medication_reminder_id")
-                else None
+                UUID(row["medication_reminder_id"]) if row.get("medication_reminder_id") else None
             ),
             appointment_reminder_id=(
-                UUID(row["appointment_reminder_id"])
-                if row.get("appointment_reminder_id")
-                else None
+                UUID(row["appointment_reminder_id"]) if row.get("appointment_reminder_id") else None
             ),
             scheduled_for=row["scheduled_for"],
             origin=ReminderDeliveryOrigin(row.get("origin", "schedule")),
