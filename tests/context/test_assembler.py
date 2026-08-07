@@ -233,4 +233,40 @@ def test_medication_reminder_uses_only_active_confirmed_medications() -> None:
 
     assert response.status is ContextAssemblyStatus.READY
     assert response.llm_request is not None
-    assert response.llm_request.selected_context.medications == [confirmed]
+    assert [item.medication_id for item in response.llm_request.selected_context.medications] == [
+        confirmed.medication_id
+    ]
+    reasons = {item.reason for item in response.exclusions}
+    assert "medication is not confirmed" in reasons
+    assert "medication is inactive" in reasons
+
+
+def test_context_budget_removes_optional_knowledge_before_failing() -> None:
+    chunks = [
+        ApprovedKnowledgeChunk(
+            chunk_id=f"SYNTHETIC-{index}",
+            source_title="Synthetic source",
+            content="x" * 1_500,
+            citation_label=f"Synthetic citation {index}",
+            approved=True,
+            review_valid=True,
+        )
+        for index in range(5)
+    ]
+    payload = ContextAssemblyInput(
+        task=TaskType.NUTRITION,
+        user_question="Synthetic budget question",
+        consents=consent_snapshot(
+            ConsentPurpose.CARE_SUPPORT,
+            ConsentPurpose.AI_PROCESSING,
+        ),
+        pregnancy=pregnancy(),
+        approved_knowledge=chunks,
+        max_context_chars=2_000,
+    )
+
+    response = ContextAssembler().assemble(payload, routine_safety_decision())
+
+    assert response.status is ContextAssemblyStatus.READY
+    assert response.llm_request is not None
+    assert any(item.reason == "removed to satisfy context budget" for item in response.exclusions)
