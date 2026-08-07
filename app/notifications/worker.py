@@ -73,7 +73,10 @@ class SupabaseNotificationWorkerRepository:
             ) from exc
 
         if response.status_code in {401, 403}:
-            raise NotificationWorkerError("Notification worker operation was denied", status_code=403)
+            raise NotificationWorkerError(
+                "Notification worker operation was denied",
+                status_code=403,
+            )
         if response.status_code == 404:
             raise NotificationWorkerError("Notification worker RPC was not found", status_code=404)
         if response.status_code >= 500:
