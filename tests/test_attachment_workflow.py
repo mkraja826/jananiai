@@ -1,6 +1,7 @@
 import pytest
 
 from app.attachments import (
+    AttachmentIntegrityStatus,
     AttachmentKind,
     AttachmentRecord,
     AttachmentWorkflow,
@@ -10,12 +11,25 @@ from app.attachments import (
 )
 
 
-def uploaded_attachment() -> AttachmentRecord:
+def uploaded_attachment(*, verified: bool = True) -> AttachmentRecord:
     return AttachmentRecord(
         kind=AttachmentKind.LAB_REPORT,
         mime_type="application/pdf",
         storage_object_path="00000000-0000-0000-0000-000000000001/report.pdf",
+        integrity_status=(
+            AttachmentIntegrityStatus.VERIFIED
+            if verified
+            else AttachmentIntegrityStatus.PENDING_WORKER_HASH
+        ),
+        integrity_verified_at="2026-08-07T10:00:00+00:00" if verified else None,
     )
+
+
+def test_attachment_requires_verified_integrity_before_extraction() -> None:
+    workflow = AttachmentWorkflow()
+
+    with pytest.raises(InvalidAttachmentTransition):
+        workflow.start_extraction(uploaded_attachment(verified=False))
 
 
 def test_attachment_requires_complete_extraction_before_confirmation() -> None:
