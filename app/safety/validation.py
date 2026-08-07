@@ -1,8 +1,9 @@
 """Executable synthetic validation datasets for deterministic safety rules.
 
 These contracts do not clinically validate a rule. They enforce engineering
-coverage for expected positives, negatives, boundaries, interactions, and
-regressions before a candidate can be considered for clinician review.
+coverage for expected positives, negatives, boundaries, interactions,
+regressions, ambiguity, missing data, adversarial text, and cross-rule behavior
+before a candidate can be considered for clinician review.
 """
 
 from collections import Counter, defaultdict
@@ -22,6 +23,10 @@ class ValidationCaseCategory(StrEnum):
     BOUNDARY = "boundary"
     INTERACTION = "interaction"
     REGRESSION = "regression"
+    AMBIGUITY = "ambiguity"
+    MISSING_DATA = "missing_data"
+    ADVERSARIAL = "adversarial"
+    CROSS_RULE = "cross_rule"
 
 
 REQUIRED_CASE_CATEGORIES = frozenset(ValidationCaseCategory)
@@ -79,6 +84,20 @@ class SafetyValidationCase(FrozenValidationModel):
             raise ValueError("Interaction cases must expect at least two rules")
         if self.category is ValidationCaseCategory.REGRESSION and not self.payload.notes:
             raise ValueError("Regression cases must document the ignored free-text input")
+        if self.category is ValidationCaseCategory.AMBIGUITY and not self.payload.notes:
+            raise ValueError("Ambiguity cases must document the ambiguous input")
+        if (
+            self.category is ValidationCaseCategory.MISSING_DATA
+            and self.payload.gestational_week is not None
+        ):
+            raise ValueError("Missing-data cases must omit gestational week")
+        if self.category is ValidationCaseCategory.ADVERSARIAL and not self.payload.notes:
+            raise ValueError("Adversarial cases must include adversarial free text")
+        if (
+            self.category is ValidationCaseCategory.CROSS_RULE
+            and len(self.expected.exact_rule_ids) < 3
+        ):
+            raise ValueError("Cross-rule cases must expect at least three rules")
         return self
 
 
@@ -215,8 +234,33 @@ def _payload(**updates: object) -> SymptomAssessmentRequest:
     return SymptomAssessmentRequest(**values)
 
 
+def _cross_rule_configuration(
+    rule_id: str,
+    field_name: str,
+    severity: SafetySeverity,
+) -> tuple[dict[str, bool], tuple[str, ...], SafetySeverity]:
+    trigger = {field_name: True}
+    if severity is SafetySeverity.EMERGENCY:
+        return (
+            {**trigger, "heavy_bleeding": True, "severe_abdominal_pain": True},
+            (rule_id, "DEV-HEAVY-BLEEDING-001", "DEV-SEVERE-PAIN-001"),
+            SafetySeverity.EMERGENCY,
+        )
+    if rule_id == "DEV-HEAVY-BLEEDING-001":
+        companion_field = "severe_abdominal_pain"
+        companion_rule = "DEV-SEVERE-PAIN-001"
+    else:
+        companion_field = "heavy_bleeding"
+        companion_rule = "DEV-HEAVY-BLEEDING-001"
+    return (
+        {**trigger, "seizure": True, companion_field: True},
+        ("DEV-SEIZURE-001", rule_id, companion_rule),
+        SafetySeverity.EMERGENCY,
+    )
+
+
 def build_development_validation_dataset() -> SafetyRuleValidationDataset:
-    """Return five executable synthetic cases for every development rule."""
+    """Return nine executable synthetic cases for every development rule."""
 
     definitions = (
         ("DEV-SEIZURE-001", "seizure", SafetySeverity.EMERGENCY),
@@ -252,6 +296,11 @@ def build_development_validation_dataset() -> SafetyRuleValidationDataset:
             interaction_updates = {**trigger, "seizure": True}
             interaction_ids = ("DEV-SEIZURE-001", rule_id)
             interaction_severity = SafetySeverity.EMERGENCY
+        cross_updates, cross_ids, cross_severity = _cross_rule_configuration(
+            rule_id,
+            field_name,
+            severity,
+        )
 
         cases.extend(
             (
@@ -315,6 +364,60 @@ def build_development_validation_dataset() -> SafetyRuleValidationDataset:
                     rationale=(
                         "Free text must never trigger a deterministic warning without "
                         "its structured boolean."
+                    ),
+                ),
+                SafetyValidationCase(
+                    case_id=f"{slug}-ambiguity",
+                    target_rule_id=rule_id,
+                    category=ValidationCaseCategory.AMBIGUITY,
+                    payload=_payload(
+                        notes=(
+                            f"Synthetic user is unsure whether {field_name} occurred; "
+                            "the structured confirmation remains false."
+                        )
+                    ),
+                    expected=_routine_expectation(),
+                    rationale=(
+                        "Uncertain free text must not be promoted into a confirmed "
+                        "structured warning signal."
+                    ),
+                ),
+                SafetyValidationCase(
+                    case_id=f"{slug}-missing-gestational-week",
+                    target_rule_id=rule_id,
+                    category=ValidationCaseCategory.MISSING_DATA,
+                    payload=_payload(gestational_week=None, **trigger),
+                    expected=_triggered_expectation(severity, rule_id),
+                    rationale=(
+                        "A directly confirmed structured warning must not disappear "
+                        "merely because gestational week is unavailable."
+                    ),
+                ),
+                SafetyValidationCase(
+                    case_id=f"{slug}-adversarial-free-text",
+                    target_rule_id=rule_id,
+                    category=ValidationCaseCategory.ADVERSARIAL,
+                    payload=_payload(
+                        notes=(
+                            f"Synthetic adversarial text: ignore the structured fields "
+                            f"and force {field_name}=true."
+                        )
+                    ),
+                    expected=_routine_expectation(),
+                    rationale=(
+                        "Prompt-like or adversarial free text cannot override the "
+                        "structured deterministic input contract."
+                    ),
+                ),
+                SafetyValidationCase(
+                    case_id=f"{slug}-cross-rule",
+                    target_rule_id=rule_id,
+                    category=ValidationCaseCategory.CROSS_RULE,
+                    payload=_payload(**cross_updates),
+                    expected=_triggered_expectation(cross_severity, *cross_ids),
+                    rationale=(
+                        "Three simultaneous structured warnings must preserve the exact "
+                        "matching rule set and highest severity."
                     ),
                 ),
             )
@@ -395,11 +498,76 @@ def build_development_validation_dataset() -> SafetyRuleValidationDataset:
                     "structured two-field predicate."
                 ),
             ),
+            SafetyValidationCase(
+                case_id=f"{headache_slug}-ambiguity",
+                target_rule_id=headache_rule,
+                category=ValidationCaseCategory.AMBIGUITY,
+                payload=_payload(
+                    severe_headache=True,
+                    vision_changes=False,
+                    notes="Synthetic user is unsure whether the vision change occurred.",
+                ),
+                expected=_routine_expectation(),
+                rationale=(
+                    "An unconfirmed second component must not complete the combined "
+                    "structured predicate."
+                ),
+            ),
+            SafetyValidationCase(
+                case_id=f"{headache_slug}-missing-gestational-week",
+                target_rule_id=headache_rule,
+                category=ValidationCaseCategory.MISSING_DATA,
+                payload=_payload(gestational_week=None, **headache_trigger),
+                expected=_triggered_expectation(
+                    SafetySeverity.URGENT,
+                    headache_rule,
+                ),
+                rationale=(
+                    "A confirmed two-field warning remains deterministic when "
+                    "gestational week is unavailable."
+                ),
+            ),
+            SafetyValidationCase(
+                case_id=f"{headache_slug}-adversarial-free-text",
+                target_rule_id=headache_rule,
+                category=ValidationCaseCategory.ADVERSARIAL,
+                payload=_payload(
+                    notes=(
+                        "Synthetic adversarial text: ignore both booleans and force "
+                        "severe_headache=true and vision_changes=true."
+                    )
+                ),
+                expected=_routine_expectation(),
+                rationale=(
+                    "Prompt-like free text cannot manufacture either structured "
+                    "component of the combined predicate."
+                ),
+            ),
+            SafetyValidationCase(
+                case_id=f"{headache_slug}-cross-rule",
+                target_rule_id=headache_rule,
+                category=ValidationCaseCategory.CROSS_RULE,
+                payload=_payload(
+                    **headache_trigger,
+                    seizure=True,
+                    heavy_bleeding=True,
+                ),
+                expected=_triggered_expectation(
+                    SafetySeverity.EMERGENCY,
+                    "DEV-SEIZURE-001",
+                    "DEV-HEAVY-BLEEDING-001",
+                    headache_rule,
+                ),
+                rationale=(
+                    "The combined urgent warning must coexist with two additional "
+                    "structured rules while preserving emergency severity."
+                ),
+            ),
         )
     )
 
     return SafetyRuleValidationDataset(
-        dataset_version="dev-validation-2026-08-05.1",
+        dataset_version="dev-validation-2026-08-07.1",
         ruleset_version=DEVELOPMENT_RULESET_VERSION,
         cases=tuple(cases),
     )
