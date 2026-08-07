@@ -5,9 +5,10 @@ This file is the permanent source of truth for Janani AI engineering progress. U
 ## Current verified progress: 29%
 
 Updated: 2026-08-07
-Branch: `phase-7/clinical-review-rehearsal`
-Latest verified implementation commit: `de9b594`
-Draft PR: `#7`
+Branch: `phase-8/pregnancy-services-attachments`
+Latest verified engineering implementation commit: `8914d80`
+Draft PR: `#8`
+Percentage gate: remains at 29% until the real 29–30% clinical-authorisation and hosted-staging requirements pass.
 
 ## Foundation completed and verified
 
@@ -189,6 +190,31 @@ Draft PR: `#7`
 - [x] Documented the pre-clinical review dossier, attestation boundary, immutable evidence store, and remaining launch gates.
 - [x] GitHub Actions passed on `de9b594`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 168 full-suite tests with 14 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 14/14 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal integration tests.
 
+## Phase 8 structured pregnancy engineering built ahead of the unresolved 30% gate
+
+- [x] Added structured pregnancy episode dating, provenance, status, and lifecycle contracts without clinical interpretation.
+- [x] Added typed weight, blood-pressure, and lab-result observation records.
+- [x] Added pregnancy encounter records for routine visits, scans, lab reviews, procedures, and other encounters.
+- [x] Made observation and encounter corrections append-only through explicit supersession links instead of silent history rewrites.
+- [x] Added a neutral chronological timeline combining observations, encounters, appointments, and attachment metadata.
+- [x] Kept timeline rendering factual only; the service does not label recorded values normal, abnormal, high, low, reassuring, dangerous, or diagnostic.
+- [x] Added attachment document date, display label, capture source, file size, and SHA-256 integrity metadata.
+- [x] Added timeline-safe `AttachmentSummary` that deliberately excludes extracted report text.
+- [x] Kept extracted text confined to the existing private `AttachmentRecord` extraction/context boundary.
+- [x] Required attachment registration paths to remain inside the authenticated user's private Storage folder.
+- [x] Added `GET /v1/pregnancy/active` and `GET /v1/pregnancy/timeline`.
+- [x] Added append-only `POST /v1/pregnancy/observations` and `POST /v1/pregnancy/encounters`.
+- [x] Added `POST /v1/pregnancy/attachments/register` for metadata registration after private object placement.
+- [x] Kept real-health write payloads blocked while `allow_real_patient_data` is disabled.
+- [x] Added private `pregnancy_observations` and `pregnancy_encounters` tables with RLS enabled.
+- [x] Granted authenticated users only SELECT and INSERT on the new timeline tables; direct UPDATE and DELETE remain unavailable.
+- [x] Added database triggers rejecting cross-user pregnancy, source-attachment, and superseded-record links.
+- [x] Added explicit `user_id` and `pregnancy_id` query filters in addition to RLS.
+- [x] Added model, timeline, repository, API, migration-contract, and local-Supabase tests.
+- [x] Added architecture documentation defining the facts/provenance boundary and follow-on engineering work.
+- [x] GitHub Actions passed on `8914d80`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 183 full-suite tests with 15 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 15/15 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal/pregnancy-timeline integration tests.
+- [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation gate.
+
 ## Current limitations
 
 - No real licensed clinician has been onboarded through the reviewer administration flow.
@@ -200,6 +226,7 @@ Draft PR: `#7`
 - The 63 validation cases and review packets are synthetic engineering evidence, not clinical validation, diagnostic performance evidence, or real-world safety evidence.
 - Rollback rehearsal evidence is synthetic and local only.
 - Atomic ruleset, reviewer-lifecycle, review-packet, and rehearsal controls are validated only in isolated local infrastructure.
+- Structured pregnancy timeline, observation, encounter, and attachment-metadata services are validated only with synthetic/local data and do not interpret clinical meaning.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
@@ -224,6 +251,8 @@ Draft PR: `#7`
 - Document production access control, incident ownership, privacy, legal, security, and clinical launch sign-off.
 - Keep every rule inactive until every real-world authorization, hosted test, and launch gate passes.
 
+Engineering may continue building isolated synthetic-only 30–39% components ahead of this gate, but the official verified percentage must not advance past 29% until these external requirements are satisfied.
+
 ## Revised roadmap allocation
 
 - 0–4%: governance and source of truth
@@ -243,6 +272,10 @@ Draft PR: `#7`
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-07 — 29% + phase-8 engineering ahead
+
+Built and verified the first structured-pregnancy engineering layer on `phase-8/pregnancy-services-attachments` while intentionally leaving official progress at 29%. Added pregnancy dating/provenance contracts, append-only weight/BP/lab observations, pregnancy encounter records, superseding corrections, a factual chronological timeline, attachment integrity metadata, timeline-safe attachment summaries without extracted text, authenticated pregnancy APIs, explicit user/pregnancy query filters, RLS-protected append-only persistence, and cross-owner link triggers. GitHub Actions passed on `8914d80`: 63 safety tests with 95.43% coverage, 183 full-suite tests, 15 expected staging skips, Docker build, all migrations rebuilt from zero, and 15/15 local integration tests. No real patient data, clinical interpretation, clinical approval, hosted project change, OCR interpretation, or hosted LLM was introduced.
 
 ### 2026-08-07 — 29%
 
