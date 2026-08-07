@@ -193,10 +193,13 @@ def test_review_packet_and_rehearsal_evidence_are_private_and_immutable() -> Non
     )
     assert denied_packet_rpc.status_code in {401, 403}
 
-    assert call_service_rpc(
-        "record_janani_clinical_review_packet",
-        {"p_actor_user_id": USER_A_ID, "p_payload": packet_payload},
-    ) == packet_id
+    assert (
+        call_service_rpc(
+            "record_janani_clinical_review_packet",
+            {"p_actor_user_id": USER_A_ID, "p_payload": packet_payload},
+        )
+        == packet_id
+    )
 
     packet_rows = read_service_rows(
         "clinical_safety_review_packets",
@@ -283,10 +286,13 @@ def test_review_packet_and_rehearsal_evidence_are_private_and_immutable() -> Non
     )
     assert denied_rehearsal_rpc.status_code in {401, 403}
 
-    assert call_service_rpc(
-        "record_janani_safety_rehearsal",
-        {"p_actor_user_id": USER_A_ID, "p_payload": rehearsal_payload},
-    ) == rehearsal_id
+    assert (
+        call_service_rpc(
+            "record_janani_safety_rehearsal",
+            {"p_actor_user_id": USER_A_ID, "p_payload": rehearsal_payload},
+        )
+        == rehearsal_id
+    )
 
     rehearsal_rows = read_service_rows(
         "clinical_safety_rehearsals",
