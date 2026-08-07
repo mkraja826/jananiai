@@ -78,6 +78,7 @@ class SupabaseReminderDeliveryWorkerRepository:
         delivery_id: UUID,
         claim_token: UUID,
         outcome: ReminderDispatchOutcome,
+        now: datetime,
         failure_code: str | None = None,
     ) -> ReminderDelivery:
         payload = await self._rpc(
@@ -86,6 +87,7 @@ class SupabaseReminderDeliveryWorkerRepository:
                 "p_delivery_id": str(delivery_id),
                 "p_claim_token": str(claim_token),
                 "p_outcome": outcome.value,
+                "p_now": now.isoformat(),
                 "p_failure_code": failure_code,
             },
         )
