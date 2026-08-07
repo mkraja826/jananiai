@@ -42,7 +42,7 @@ class ReminderRepository(Protocol):
 
 
 class SupabaseReminderRepository:
-    """Reminder persistence; schedules are explicit user choices, never inferred medication advice."""
+    """Persist explicit user reminder choices without inferring medication advice."""
 
     def __init__(self, client: SupabaseUserRestClient) -> None:
         self._client = client
