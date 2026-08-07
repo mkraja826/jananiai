@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import SecretStr
 
-from app.attachments import ConfirmationStatus
+from app.attachments import AttachmentIntegrityStatus, ConfirmationStatus
 from app.audit import ContextAssemblyAuditEvent, SafetyAuditEvent
 from app.auth.models import AuthenticatedUser
 from app.context import ContextAssemblyStatus, TaskType
@@ -91,6 +91,9 @@ class FakeRestClient:
                     "storage_object_path": f"{USER_ID}/synthetic-report.pdf",
                     "extraction_status": "completed",
                     "confirmation_status": "confirmed",
+                    "integrity_status": "verified",
+                    "integrity_verified_at": "2026-08-04T00:00:00+00:00",
+                    "content_sha256": "a" * 64,
                 }
             ],
             "attachment_extractions": [
@@ -142,6 +145,7 @@ def test_repository_loads_confirmed_user_owned_context() -> None:
     assert len(context.medications) == 1
     assert len(context.attachments) == 1
     assert context.attachments[0].confirmation_status is ConfirmationStatus.CONFIRMED
+    assert context.attachments[0].integrity_status is AttachmentIntegrityStatus.VERIFIED
     assert context.attachments[0].eligible_for_context is True
 
 
