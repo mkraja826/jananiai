@@ -21,9 +21,7 @@ def test_expo_transport_is_added_without_opening_raw_device_table() -> None:
 def test_registration_rpc_remains_authenticated_only() -> None:
     sql = migration_sql()
 
-    signature = (
-        "public.register_janani_notification_device(uuid, text, text, text, boolean)"
-    )
+    signature = "public.register_janani_notification_device(uuid, text, text, text, boolean)"
     assert f"revoke all on function {signature}" in sql
     assert "from public, anon;" in sql
     assert f"grant execute on function {signature}" in sql
