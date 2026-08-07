@@ -4,6 +4,7 @@ from app.attachments import AttachmentSummary
 from app.domain import AppointmentRecord
 from app.pregnancy.models import (
     ObservationKind,
+    PregnancyCompletionEvent,
     PregnancyEncounter,
     PregnancyEpisode,
     PregnancyObservation,
@@ -24,6 +25,7 @@ def build_pregnancy_timeline(
     encounters: list[PregnancyEncounter],
     appointments: list[AppointmentRecord],
     attachments: list[AttachmentSummary],
+    completions: list[PregnancyCompletionEvent] | None = None,
 ) -> PregnancyTimeline:
     """Merge structured records chronologically without interpreting clinical meaning."""
 
@@ -96,6 +98,22 @@ def build_pregnancy_timeline(
                 title=attachment.display_label or attachment.kind.value.replace("_", " ").title(),
                 detail=attachment.confirmation_status.value,
                 source_attachment_id=attachment.attachment_id,
+            )
+        )
+
+    for completion in completions or []:
+        title = (
+            "Delivery recorded"
+            if completion.completion_type.value == "delivery"
+            else "Pregnancy completion recorded"
+        )
+        items.append(
+            PregnancyTimelineItem(
+                item_id=completion.completion_event_id,
+                kind=TimelineItemKind.COMPLETION,
+                occurred_at=completion.occurred_at,
+                title=title,
+                detail=completion.note or completion.completion_type.value.replace("_", " "),
             )
         )
 
