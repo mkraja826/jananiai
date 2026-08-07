@@ -102,8 +102,7 @@ class ReminderNotificationDispatcher:
             transport_results.append(await self._transport.send(destination, envelope))
 
         sent_count = sum(
-            item.disposition is NotificationTransportDisposition.SENT
-            for item in transport_results
+            item.disposition is NotificationTransportDisposition.SENT for item in transport_results
         )
         retryable_count = sum(
             item.disposition is NotificationTransportDisposition.RETRYABLE_FAILURE
