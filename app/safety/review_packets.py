@@ -160,7 +160,11 @@ class ClinicalReviewPacketBuilder:
         cases = tuple(case for case in dataset.cases if case.target_rule_id == candidate.rule_id)
         if not cases:
             raise ValueError("Candidate has no validation evidence")
-        results = tuple(result for result in report.results if result.target_rule_id == candidate.rule_id)
+        results = tuple(
+            result
+            for result in report.results
+            if result.target_rule_id == candidate.rule_id
+        )
         if len(results) != len(cases) or any(not result.passed for result in results):
             raise ValueError("Candidate validation evidence is incomplete or failing")
 
