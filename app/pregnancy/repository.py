@@ -193,7 +193,9 @@ class SupabasePregnancyRepository:
                 "kind": payload.kind.value,
                 "mime_type": payload.mime_type,
                 "storage_object_path": payload.storage_object_path,
-                "document_date": payload.document_date.isoformat() if payload.document_date else None,
+                "document_date": (
+                    payload.document_date.isoformat() if payload.document_date else None
+                ),
                 "display_label": payload.display_label,
                 "capture_source": payload.capture_source.value,
                 "file_size_bytes": payload.file_size_bytes,
@@ -254,7 +256,10 @@ class SupabasePregnancyRepository:
             observations=[self._map_observation(row) for row in observations],
             encounters=[self._map_encounter(row) for row in encounters],
             appointments=[self._map_appointment(row) for row in appointments],
-            attachments=[self._map_attachment_summary(row, bool(row.get("synthetic", True))) for row in attachments],
+            attachments=[
+                self._map_attachment_summary(row, bool(row.get("synthetic", True)))
+                for row in attachments
+            ],
         )
 
     async def _require_owned_pregnancy(self, user_id: UUID, pregnancy_id: UUID) -> None:
