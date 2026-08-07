@@ -219,7 +219,6 @@ def test_review_packet_and_rehearsal_evidence_are_private_and_immutable() -> Non
     ]
 
     incident_ruleset_id = str(uuid4())
-    restored_ruleset_id = str(uuid4())
     insert_service_record(
         "clinical_safety_rulesets",
         {
@@ -234,19 +233,30 @@ def test_review_packet_and_rehearsal_evidence_are_private_and_immutable() -> Non
             "terminal_reason": "Synthetic incident rollback rehearsal state",
         },
     )
-    insert_service_record(
+
+    active_rulesets = read_service_rows(
         "clinical_safety_rulesets",
-        {
-            "id": restored_ruleset_id,
-            "version": f"synthetic-restored-{uuid4()}",
-            "status": "active",
-            "required_rule_ids": [rule_id],
-            "manifest_digest": hashlib.sha256(restored_ruleset_id.encode()).hexdigest(),
-            "approved_at": (now - timedelta(days=3)).isoformat(),
-            "activates_at": (now - timedelta(days=2)).isoformat(),
-            "expires_at": (now + timedelta(days=30)).isoformat(),
-        },
+        "id,status",
+        status="eq.active",
     )
+    if active_rulesets:
+        assert len(active_rulesets) == 1
+        restored_ruleset_id = active_rulesets[0]["id"]
+    else:
+        restored_ruleset_id = str(uuid4())
+        insert_service_record(
+            "clinical_safety_rulesets",
+            {
+                "id": restored_ruleset_id,
+                "version": f"synthetic-restored-{uuid4()}",
+                "status": "active",
+                "required_rule_ids": [rule_id],
+                "manifest_digest": hashlib.sha256(restored_ruleset_id.encode()).hexdigest(),
+                "approved_at": (now - timedelta(days=3)).isoformat(),
+                "activates_at": (now - timedelta(days=2)).isoformat(),
+                "expires_at": (now + timedelta(days=30)).isoformat(),
+            },
+        )
 
     rehearsal_id = str(uuid4())
     step_names = [
