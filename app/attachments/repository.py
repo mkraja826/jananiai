@@ -50,7 +50,9 @@ class SupabaseAttachmentUploadRepository:
                 "p_mime_type": payload.mime_type,
                 "p_file_size_bytes": payload.file_size_bytes,
                 "p_content_sha256": payload.content_sha256,
-                "p_document_date": payload.document_date.isoformat() if payload.document_date else None,
+                "p_document_date": (
+                    payload.document_date.isoformat() if payload.document_date else None
+                ),
                 "p_display_label": payload.display_label,
                 "p_capture_source": payload.capture_source.value,
                 "p_synthetic": payload.synthetic,
