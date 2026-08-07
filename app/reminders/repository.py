@@ -9,7 +9,14 @@ from app.reminders.models import (
     AppointmentReminderScheduleCreate,
     MedicationReminderSchedule,
     MedicationReminderScheduleCreate,
+    ReminderDelivery,
+    ReminderDeliveryOrigin,
+    ReminderDeliveryOverview,
+    ReminderDeliveryStatus,
+    ReminderKind,
     ReminderOverview,
+    ReminderResponse,
+    ReminderResponseCreate,
 )
 
 
@@ -39,6 +46,20 @@ class ReminderRepository(Protocol):
         user: AuthenticatedUser,
         reminder_id: UUID,
     ) -> AppointmentReminderSchedule: ...
+
+    async def list_deliveries(
+        self,
+        user: AuthenticatedUser,
+        *,
+        limit: int = 100,
+    ) -> ReminderDeliveryOverview: ...
+
+    async def record_response(
+        self,
+        user: AuthenticatedUser,
+        delivery_id: UUID,
+        payload: ReminderResponseCreate,
+    ) -> ReminderResponse: ...
 
 
 class SupabaseReminderRepository:
@@ -142,6 +163,50 @@ class SupabaseReminderRepository:
             raise SupabasePersistenceError("Reminder RPC returned an invalid appointment schedule")
         return self._map_appointment(data)
 
+    async def list_deliveries(
+        self,
+        user: AuthenticatedUser,
+        *,
+        limit: int = 100,
+    ) -> ReminderDeliveryOverview:
+        self._ensure_identity(user)
+        safe_limit = max(1, min(limit, 200))
+        rows = await self._client.select(
+            "reminder_delivery_jobs",
+            params={
+                "select": (
+                    "id,reminder_kind,medication_reminder_id,appointment_reminder_id,"
+                    "scheduled_for,origin,status,attempt_count,synthetic,created_at,completed_at"
+                ),
+                "user_id": f"eq.{user.user_id}",
+                "order": "scheduled_for.desc",
+                "limit": str(safe_limit),
+            },
+        )
+        return ReminderDeliveryOverview(deliveries=[self._map_delivery(row) for row in rows])
+
+    async def record_response(
+        self,
+        user: AuthenticatedUser,
+        delivery_id: UUID,
+        payload: ReminderResponseCreate,
+    ) -> ReminderResponse:
+        self._ensure_identity(user)
+        data = await self._client.rpc(
+            "record_janani_reminder_response",
+            {
+                "p_client_event_id": str(payload.client_event_id),
+                "p_delivery_id": str(delivery_id),
+                "p_event_type": payload.event_type.value,
+                "p_occurred_at": payload.occurred_at.isoformat(),
+                "p_remind_at": payload.remind_at.isoformat() if payload.remind_at else None,
+                "p_synthetic": payload.synthetic,
+            },
+        )
+        if not isinstance(data, dict):
+            raise SupabasePersistenceError("Reminder response RPC returned an invalid event")
+        return self._map_response(data)
+
     def _map_medication(self, row: dict) -> MedicationReminderSchedule:
         return MedicationReminderSchedule(
             reminder_id=UUID(row["id"]),
@@ -166,6 +231,37 @@ class SupabaseReminderRepository:
             created_at=row.get("created_at"),
             disabled_at=row.get("disabled_at"),
             synthetic=bool(row.get("synthetic", True)),
+        )
+
+    def _map_delivery(self, row: dict) -> ReminderDelivery:
+        return ReminderDelivery(
+            delivery_id=UUID(row["id"]),
+            reminder_kind=ReminderKind(row["reminder_kind"]),
+            medication_reminder_id=(
+                UUID(row["medication_reminder_id"]) if row.get("medication_reminder_id") else None
+            ),
+            appointment_reminder_id=(
+                UUID(row["appointment_reminder_id"]) if row.get("appointment_reminder_id") else None
+            ),
+            scheduled_for=row["scheduled_for"],
+            origin=ReminderDeliveryOrigin(row.get("origin", "schedule")),
+            status=ReminderDeliveryStatus(row["status"]),
+            attempt_count=int(row.get("attempt_count", 0)),
+            synthetic=bool(row.get("synthetic", True)),
+            created_at=row.get("created_at"),
+            completed_at=row.get("completed_at"),
+        )
+
+    def _map_response(self, row: dict) -> ReminderResponse:
+        return ReminderResponse(
+            response_id=UUID(row["id"]),
+            delivery_id=UUID(row["delivery_id"]),
+            client_event_id=UUID(row["client_event_id"]),
+            event_type=row["event_type"],
+            occurred_at=row["occurred_at"],
+            remind_at=row.get("remind_at"),
+            synthetic=bool(row.get("synthetic", True)),
+            created_at=row.get("created_at"),
         )
 
     def _ensure_identity(self, user: AuthenticatedUser) -> None:
