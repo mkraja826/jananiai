@@ -4,245 +4,165 @@ This file is the permanent source of truth for Janani AI engineering progress. U
 
 ## Current verified progress: 29%
 
-Updated: 2026-08-07
-Branch: `phase-9/lifecycle-reminders-upload-integrity`
-Latest verified engineering implementation commit: `bf1ddeb`
-Draft PR: `#9`
+Updated: 2026-08-08
+Branch: `phase-10/reminder-delivery-events`
+Latest verified engineering implementation commit: `65f7e7c`
+Draft PR: `#10`
 Percentage gate: remains at 29% until the real 29–30% clinical-authorisation and hosted-staging requirements pass.
+
+Engineering is allowed to continue building isolated synthetic-only components ahead of this gate. Those components do not advance the official verified percentage beyond 29%.
 
 ## Foundation completed and verified
 
-- [x] Repository initialised.
-- [x] Mission, intended role, and safety boundaries documented.
-- [x] Free-first development policy established.
-- [x] Python/FastAPI project foundation created.
-- [x] Typed health, readiness, and safety-evaluation API contracts created.
+- [x] Repository initialised and mission/safety boundaries documented.
+- [x] Free-first Python/FastAPI foundation created.
+- [x] Typed health, readiness, safety, and provider-neutral AI contracts created.
 - [x] Deterministic safety-engine core created.
-- [x] Draft synthetic-test warning rules created.
-- [x] Production mode excludes unapproved rules.
-- [x] Provider-independent LLM protocol created.
-- [x] Mock LLM provider created; no paid API required.
-- [x] Privacy-minimised safety audit model and development recorder created.
-- [x] Safety API records minimal audit events without raw notes or symptom fields.
-- [x] Clinician approval metadata requires sign-off, approval time, and review deadline.
-- [x] Production startup blocks when no current approved ruleset is active.
+- [x] Draft rules remain development-only and excluded from production activation.
+- [x] Mock LLM provider created; no hosted model is required for current engineering.
+- [x] Privacy-minimised safety auditing created.
 - [x] Pytest, Ruff, Docker, and GitHub Actions foundations created.
-- [x] Foundation architecture, ADRs, threat model, and permanent progress tracker created.
+- [x] Architecture decisions, threat model, and permanent progress tracker established.
 
-## Phase 2 data and context foundation completed and verified
+## Phase 2 — data, consent, attachments, and context foundation
 
-- [x] Added privacy-minimised user health, pregnancy, medication, and appointment models.
-- [x] Excluded direct identifiers from AI context-domain models.
-- [x] Added append-only consent events with grant and revocation resolution by purpose.
-- [x] Separated care support, AI processing, attachment processing, model improvement, and research consent.
-- [x] Added attachment type, extraction state, confidence, and user-confirmation contracts.
-- [x] Blocked attachment text from AI context until extraction is complete and user-confirmed.
-- [x] Added task-specific context inclusion and exclusion policies.
-- [x] Implemented the deterministic Context Assembly Engine using synthetic records.
-- [x] Added safety-first blocking before any LLM request can be assembled.
-- [x] Added explicit attachment selection for report explanations.
-- [x] Added active and confirmed medication filtering.
-- [x] Added approved and review-valid knowledge filtering.
-- [x] Added context-size budgeting and optional-context trimming.
-- [x] Added versioned, provider-neutral `JananiLLMRequest` schema.
-- [x] Added `POST /v1/context/assemble` synthetic-only API endpoint.
-- [x] Added privacy-minimised context audit events containing IDs and decisions only.
-- [x] Added Supabase schema for profiles, pregnancies, consent, medication, appointments, attachments, extraction versions, and context audits.
-- [x] Added owner-scoped RLS policies and private storage policies.
-- [x] Added database triggers preventing records from being linked to another user's pregnancy.
-- [x] Added tests for consent revocation, data confirmation, task relevance, safety blocking, budgets, API behavior, and audit minimisation.
+- [x] Added privacy-minimised user-health, pregnancy, medication, and appointment models.
+- [x] Added append-only consent events with separate care, AI, attachment, model-improvement, and research purposes.
+- [x] Added attachment extraction/confirmation state contracts.
+- [x] Blocked attachment text from AI context until extraction is completed and user-confirmed.
+- [x] Added task-specific context inclusion/exclusion rules and context budgets.
+- [x] Added the deterministic Context Assembly Engine and provider-neutral `JananiLLMRequest`.
+- [x] Added synthetic-only context assembly API and privacy-minimised context auditing.
+- [x] Added initial Supabase schema, private Storage, owner RLS, and cross-owner link triggers.
+- [x] GitHub Actions passed on implementation commit `8686255`: 12 safety tests, 92.50% safety coverage, 40 full-suite tests, and Docker build.
 
-## Phase 3 authenticated persistence and local RLS validation completed
+## Phase 3 — authenticated persistence and local RLS validation
 
-- [x] Added Supabase bearer-token verification through the Auth user endpoint.
-- [x] Added verified request identity with bearer tokens excluded from serialization and logs.
-- [x] Made authentication and Supabase configuration mandatory in staging and production.
-- [x] Added an RLS-scoped PostgREST client using the verified caller token and publishable key.
-- [x] Added server-side loading for profiles, active pregnancy, consent history, medications, appointments, attachments, and extraction versions.
-- [x] Added `POST /v1/context/assemble-stored`; clients no longer need to send their complete health history for this path.
-- [x] Added identity matching between the verified user and repository client.
-- [x] Added authenticated database RPCs for minimal safety and context audit writes.
-- [x] Kept questions, symptom notes, extracted report text, prompts, and model outputs out of audit RPC payloads.
-- [x] Added attachment extraction state transitions: start, process, complete/fail, confirm/reject.
-- [x] Added owner-scoped attachment-confirmation RPC.
-- [x] Added a service-role-only extraction writer RPC while keeping direct extraction-table writes closed.
-- [x] Added account-deletion request table, RPC, model, and protected endpoint.
-- [x] Added explicit grants and revokes for user-owned and internal tables.
-- [x] Added owner-read policy for safety audit events.
-- [x] Added free local Supabase configuration and synthetic-user provisioning.
-- [x] Added a separate GitHub Actions local-Supabase job requiring no paid branch or hosted credentials.
-- [x] Rebuilt all six migrations from an empty local Postgres database.
-- [x] Created and authenticated two ephemeral synthetic users.
-- [x] Verified profile and pregnancy owner isolation.
-- [x] Verified append-only consent history.
-- [x] Verified medication, appointment, and attachment ownership links.
-- [x] Verified direct writes to audit and extraction tables are denied.
-- [x] Verified owner-scoped audit and attachment-confirmation RPCs.
-- [x] Verified service-role-only extraction writes.
-- [x] Verified private Storage object paths are owner-scoped.
-- [x] Verified deletion requests are private and idempotent.
-- [x] Added Windows PowerShell instructions for the same local validation flow.
-- [x] GitHub Actions passed on `5b4210a`: quality pipeline and free local-Supabase pipeline both green; 9/9 local RLS/RPC/Storage tests passed.
+- [x] Added Supabase bearer-token verification and verified request identity.
+- [x] Added RLS-scoped PostgREST persistence using the caller token and publishable key.
+- [x] Added authenticated stored-context assembly.
+- [x] Added minimal safety/context audit RPCs without raw questions, symptom notes, reports, prompts, or model outputs.
+- [x] Added attachment extraction state transitions and service-role-only extraction persistence.
+- [x] Added account-deletion request foundation.
+- [x] Added explicit table grants/revokes and owner-read audit policies.
+- [x] Added isolated local Supabase CI with ephemeral synthetic users.
+- [x] Verified RLS isolation, append-only consent, private Storage, RPC ownership, extraction separation, and deletion-request privacy.
+- [x] GitHub Actions passed on `5b4210a`: quality pipeline green and 9/9 local RLS/RPC/Storage integration tests passed.
 
-## Phase 4 clinical safety governance foundation completed and verified
+## Phase 4 — clinical safety governance foundation
 
-- [x] Replaced single-signoff approval metadata with two distinct clinician sign-offs.
-- [x] Bound approved engine rules to a governance release ID and SHA-256 candidate digest.
-- [x] Added reviewer roles for obstetrician, clinical safety, and language review.
-- [x] Added reviewer identity, jurisdiction, license reference, verification time, expiry, and active status.
-- [x] Added clinical-source provenance, section, review time, expiry, and development-placeholder controls.
-- [x] Added gestational applicability boundaries and required structured-input fields.
-- [x] Added versioned English and Telugu escalation-wording contracts.
-- [x] Added immutable candidate content digests and exact-content clinical reviews.
-- [x] Required two distinct reviewers with obstetrician and clinical-safety roles for release approval.
-- [x] Prevented releases from outliving their sources or reviewer credentials.
-- [x] Added approved, active, retired, expired, and rolled-back release states.
-- [x] Added activation, retirement, replacement, and rollback controls.
-- [x] Added immutable governance-event models and append-only database history.
-- [x] Converted all seven development warning rules into versioned review candidates.
-- [x] Marked every current candidate with development-placeholder provenance so approval remains impossible.
-- [x] Added service-role-only Supabase reviewer, candidate, review, release, approval, and event tables.
-- [x] Denied end-user access to all clinical-governance tables and RPCs.
-- [x] Added per-approval validation of reviewer identity, role, candidate digest, and credential validity.
-- [x] Added static migration-contract tests and adversarial governance tests.
-- [x] Added local-Supabase integration tests for end-user denial, dual approval, activation, immutability, and append-only history.
-- [x] Documented the clinical safety governance lifecycle and remaining launch gates.
-- [x] GitHub Actions passed on `148565f`: Ruff lint and formatting, 27 safety tests, 96.87% safety-module coverage, 80 full-suite tests, 10 expected staging skips, Docker build, eight migrations rebuilt from zero, and 10/10 local RLS/RPC/Storage/governance tests.
+- [x] Added distinct obstetrician and clinical-safety sign-off requirements.
+- [x] Added reviewer identity, jurisdiction, license reference, verification and expiry metadata.
+- [x] Added clinical-source provenance, exact sections, applicability, and review expiry.
+- [x] Added English/Telugu escalation wording contracts.
+- [x] Added immutable review candidates and candidate digests.
+- [x] Added release approval, activation, retirement, replacement, rollback, and append-only governance events.
+- [x] Marked all current warning-rule candidates with development-placeholder provenance so clinical activation remains impossible.
+- [x] Denied end-user access to governance tables/RPCs.
+- [x] Added adversarial governance and local-Supabase validation.
+- [x] GitHub Actions passed on `148565f`: 27 safety tests, 96.87% safety coverage, 80 full-suite tests, 10 expected staging skips, Docker build, and 10/10 local integration tests.
 
-## Phase 5 atomic safety ruleset activation completed and verified
+## Phase 5 — atomic deterministic safety rulesets
 
-- [x] Made a complete deterministic safety ruleset the deployable unit instead of an individual rule release.
-- [x] Added immutable ruleset and member domain models.
-- [x] Added a complete required-rule manifest with exactly one release per required rule ID.
-- [x] Bound every ruleset member to its release ID, rule ID, and reviewed candidate digest.
-- [x] Added deterministic SHA-256 ruleset manifest digests.
-- [x] Rejected partial, extra, duplicate, altered, expired, or invalid-state member collections.
-- [x] Added pure-domain atomic approval, first activation, replacement, and rollback transitions.
-- [x] Added private Supabase ruleset and ruleset-member tables.
-- [x] Enforced at most one active clinical safety ruleset.
-- [x] Made ruleset manifests and membership immutable.
-- [x] Added service-role-only ruleset approval, activation, and rollback RPCs.
-- [x] Denied `anon` and `authenticated` access to ruleset tables and management RPCs.
-- [x] Added active-release drift detection before activation and rollback.
-- [x] Added final exact-active-release-set consistency checks inside each transaction.
-- [x] Added ruleset approval, activation, retirement, and rollback governance events.
-- [x] Added PostgREST OpenAPI discovery validation for all three ruleset RPCs.
-- [x] Added explicit local PostgREST schema refresh after migration reset.
-- [x] Resolved pgcrypto hashing under a locked `public, extensions` security-definer search path.
-- [x] Added adversarial unit tests for incomplete manifests, altered digests, duplicate identities, invalid states, and expired members.
-- [x] Added a two-generation local-Supabase test proving complete activation, replacement, exact active membership, and rollback restoration.
-- [x] Documented the atomic ruleset architecture, failure modes, API boundary, and launch gates.
-- [x] GitHub Actions passed on `59c7c10`: Ruff lint and formatting, 34 safety tests with 97.44% safety-module coverage, 94 full-suite tests with 12 expected staging skips, Docker build, all migrations rebuilt from zero, and 12/12 local RLS/RPC/Storage/governance/atomic-ruleset integration tests.
+- [x] Made a complete safety ruleset the deployable unit.
+- [x] Added exact required-rule manifests and immutable member digests.
+- [x] Rejected incomplete, duplicate, altered, expired, extra, or invalid manifests.
+- [x] Added service-role-only approval, activation, replacement, and rollback RPCs.
+- [x] Enforced one active ruleset and exact active-release consistency.
+- [x] Added drift detection and PostgREST RPC discovery validation.
+- [x] Added two-generation activation/replacement/rollback integration validation.
+- [x] GitHub Actions passed on `59c7c10`: 34 safety tests, 97.44% safety coverage, 94 full-suite tests, 12 expected staging skips, Docker build, and 12/12 local integration tests.
 
-## Phase 6 reviewer administration and safety validation datasets completed and verified
+## Phase 6 — reviewer administration and validation datasets
 
-- [x] Added trusted governance-role claims sourced only from Supabase `app_metadata`.
-- [x] Explicitly ignored user-editable metadata for governance authorization.
-- [x] Added `reviewer_admin`, `safety_release_manager`, and `auditor` role contracts.
-- [x] Made malformed, unknown, non-string, and missing governance roles fail closed.
-- [x] Kept bearer tokens, trusted app metadata, and service-role secrets out of serialization and repr output.
-- [x] Added reviewer onboarding, credential reverification, deactivation, and result models.
-- [x] Required timezone-aware credential windows, conflict-of-interest attestation, attestation version, opaque evidence reference, and substantive reason.
-- [x] Added a governance administration API that is disabled by default.
-- [x] Required authentication, Supabase configuration, and a backend-only service-role key before the administration API can be enabled.
-- [x] Added protected reviewer onboarding, reverification, and deactivation routes.
-- [x] Added a service-role-backed repository so mobile and browser clients never receive the service-role key.
-- [x] Made reviewer identity, role, jurisdiction, and license reference immutable after onboarding.
-- [x] Allowed credential and lifecycle updates only through controlled database RPCs.
-- [x] Added append-only reviewer-onboarded, reviewer-reverified, and reviewer-deactivated governance events with administrator user IDs.
-- [x] Blocked reviewer deactivation while the reviewer has an approval on an active release.
-- [x] Kept end-user access to reviewer tables and lifecycle RPCs denied.
-- [x] Added executable true-positive, true-negative, boundary, interaction, and regression categories.
-- [x] Added 35 synthetic validation cases: five categories for each of seven development warning rules.
-- [x] Added exact expected triggered-rule sets, highest severity, and LLM-blocking assertions.
-- [x] Added free-text regression cases proving notes cannot trigger deterministic rules without structured fields.
-- [x] Added fail-closed checks for duplicate cases, incomplete rule coverage, missing categories, real-data payloads, and invalid expectations.
-- [x] Added per-case mismatch reports and per-rule case counts.
-- [x] Added HTTP, repository, authorization, model, configuration, migration, and local-Supabase lifecycle tests.
-- [x] Documented reviewer authority, evidence handling, validation categories, API boundaries, and remaining clinical gates.
-- [x] GitHub Actions passed on `dcda56f`: Ruff lint and formatting, 49 safety tests with 96.33% safety-module coverage, 149 full-suite tests with 13 expected staging skips, Docker build, all migrations rebuilt from zero, and 13/13 local RLS/RPC/Storage/governance/reviewer-lifecycle integration tests.
+- [x] Added trusted governance roles sourced only from Supabase `app_metadata`.
+- [x] Added reviewer onboarding, credential reverification, and controlled deactivation.
+- [x] Added conflict-of-interest attestation and opaque evidence references.
+- [x] Added disabled-by-default backend governance administration APIs.
+- [x] Kept service-role credentials outside mobile/browser clients.
+- [x] Added append-only reviewer lifecycle events and active-release deactivation protection.
+- [x] Added 35 synthetic validation cases across true-positive, true-negative, boundary, interaction, and regression categories.
+- [x] Added fail-closed validation-dataset checks and per-rule reporting.
+- [x] GitHub Actions passed on `dcda56f`: 49 safety tests, 96.33% safety coverage, 149 full-suite tests, 13 expected staging skips, Docker build, and 13/13 local integration tests.
 
-## Phase 7 pre-clinical review packets and rollback rehearsal completed and verified
+## Phase 7 — pre-clinical review packets and rollback rehearsal
 
-- [x] Expanded deterministic validation from 35 to 63 synthetic cases.
-- [x] Required nine categories for every one of the seven development rules: true positive, true negative, boundary, interaction, regression, ambiguity, missing data, adversarial, and cross-rule.
-- [x] Added challenge cases proving ambiguous and prompt-like free text cannot manufacture structured deterministic warning signals.
-- [x] Added missing-data cases documenting current behavior when gestational week is unavailable.
-- [x] Added three-rule cross-interaction cases with exact rule-set and highest-severity expectations.
-- [x] Added immutable pre-clinical review-packet models.
-- [x] Bound each packet to candidate ID, version, canonical candidate SHA-256 digest, validation dataset version, dataset SHA-256 digest, and exact target-rule case IDs.
-- [x] Required fully passing engineering validation and all nine categories before a packet can be built or persisted.
-- [x] Required obstetrician, clinical-safety, and language-review roles in every packet.
-- [x] Added future reviewer-attestation contracts tied to the exact packet digest.
-- [x] Required approval attestations to confirm expected results, sources and sections, and escalation wording.
-- [x] Kept packets non-eligible for clinical approval while development-placeholder sources remain.
-- [x] Added a synthetic emergency rollback rehearsal runner using the existing atomic ruleset rollback service.
-- [x] Required six rehearsal evidence steps: incident detection, active-manifest verification, atomic rollback, restored-manifest verification, rolled-back-state verification, and audit evidence.
-- [x] Verified exact prior ruleset restoration and incident ruleset rollback state.
-- [x] Added private append-only review-packet and safety-rehearsal Supabase tables.
-- [x] Added service-role-only RPCs for recording review packets and rehearsal evidence.
-- [x] Denied normal users read access and RPC execution for the evidence tables.
-- [x] Blocked update and delete after evidence insertion, including for the service role.
-- [x] Added review-packet-recorded and rehearsal-recorded immutable governance events with administrator user IDs.
-- [x] Found PostgreSQL error `42702` (`column reference "value" is ambiguous`) in rehearsal step extraction during real local-Supabase validation.
-- [x] Fixed the SQL with explicit JSON-element and `unnest` aliases instead of weakening the test.
-- [x] Hardened rehearsal persistence to require top-level `passed=true`, exactly six unique required steps, every step `passed=true`, and a nonempty evidence reference for every step.
-- [x] Documented the pre-clinical review dossier, attestation boundary, immutable evidence store, and remaining launch gates.
-- [x] GitHub Actions passed on `de9b594`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 168 full-suite tests with 14 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 14/14 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal integration tests.
+- [x] Expanded deterministic validation to 63 synthetic cases across nine categories per rule.
+- [x] Added ambiguity, missing-data, adversarial, and cross-rule challenge cases.
+- [x] Added immutable pre-clinical review packets bound to exact candidate and dataset digests.
+- [x] Required obstetrician, clinical-safety, and language-review roles in review packets.
+- [x] Kept packets non-eligible while placeholder clinical sources remain.
+- [x] Added synthetic emergency rollback rehearsal with six required evidence steps.
+- [x] Added private append-only review/rehearsal evidence persistence.
+- [x] Found and fixed PostgreSQL `42702` ambiguous JSON-value extraction during real local validation.
+- [x] Hardened rehearsal persistence to require complete passing evidence.
+- [x] GitHub Actions passed on `de9b594`: 63 safety tests, 95.43% safety coverage, 168 full-suite tests, 14 expected staging skips, Docker build, and 14/14 local integration tests.
 
-## Phase 8 structured pregnancy engineering built ahead of the unresolved 30% gate
+## Phase 8 — structured pregnancy engineering ahead of the unresolved 30% gate
 
 - [x] Added structured pregnancy episode dating, provenance, status, and lifecycle contracts without clinical interpretation.
 - [x] Added typed weight, blood-pressure, and lab-result observation records.
-- [x] Added pregnancy encounter records for routine visits, scans, lab reviews, procedures, and other encounters.
-- [x] Made observation and encounter corrections append-only through explicit supersession links instead of silent history rewrites.
-- [x] Added a neutral chronological timeline combining observations, encounters, appointments, and attachment metadata.
-- [x] Kept timeline rendering factual only; the service does not label recorded values normal, abnormal, high, low, reassuring, dangerous, or diagnostic.
-- [x] Added attachment document date, display label, capture source, file size, and SHA-256 integrity metadata.
-- [x] Added timeline-safe `AttachmentSummary` that deliberately excludes extracted report text.
-- [x] Kept extracted text confined to the existing private `AttachmentRecord` extraction/context boundary.
-- [x] Required attachment registration paths to remain inside the authenticated user's private Storage folder.
-- [x] Added `GET /v1/pregnancy/active` and `GET /v1/pregnancy/timeline`.
-- [x] Added append-only `POST /v1/pregnancy/observations` and `POST /v1/pregnancy/encounters`.
-- [x] Added `POST /v1/pregnancy/attachments/register` for metadata registration after private object placement.
-- [x] Kept real-health write payloads blocked while `allow_real_patient_data` is disabled.
-- [x] Added private `pregnancy_observations` and `pregnancy_encounters` tables with RLS enabled.
-- [x] Granted authenticated users only SELECT and INSERT on the new timeline tables; direct UPDATE and DELETE remain unavailable.
-- [x] Added database triggers rejecting cross-user pregnancy, source-attachment, and superseded-record links.
-- [x] Added explicit `user_id` and `pregnancy_id` query filters in addition to RLS.
-- [x] Added model, timeline, repository, API, migration-contract, and local-Supabase tests.
-- [x] Added architecture documentation defining the facts/provenance boundary and follow-on engineering work.
-- [x] GitHub Actions passed on `8914d80`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 183 full-suite tests with 15 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 15/15 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal/pregnancy-timeline integration tests.
-- [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation gate.
+- [x] Added pregnancy encounter records.
+- [x] Made observation/encounter corrections append-only through supersession.
+- [x] Added a factual chronological timeline combining observations, encounters, appointments, and attachment metadata.
+- [x] Kept timeline rendering neutral; it does not label recorded values normal, abnormal, reassuring, dangerous, or diagnostic.
+- [x] Added attachment document date, label, capture source, size, and SHA-256 metadata.
+- [x] Kept extracted text outside timeline summaries.
+- [x] Added authenticated pregnancy timeline APIs and RLS-protected append-only persistence.
+- [x] GitHub Actions passed on `8914d80`: 63 safety tests, 95.43% safety coverage, 183 full-suite tests, 15 expected staging skips, Docker build, and 15/15 local integration tests.
+- [x] Official progress intentionally remained 29%.
 
-## Phase 9 lifecycle, reminders, and upload-integrity engineering built ahead of the unresolved 30% gate
+## Phase 9 — pregnancy lifecycle, explicit reminders, and upload integrity ahead of the unresolved 30% gate
 
-- [x] Added append-only pregnancy completion events for delivery, pregnancy loss, and other explicitly recorded completion states.
-- [x] Made the first completion event atomically close the active pregnancy episode and set `completed_at`.
-- [x] Made completion corrections append-only through explicit supersession instead of mutating historical events.
-- [x] Kept completion records factual only; document-derived completion remains blocked pending a future attachment-linked confirmation workflow.
-- [x] Made the pregnancy timeline load the latest episode so completed pregnancy history remains viewable after completion while `/active` remains active-only.
-- [x] Added explicit medication reminder schedules with local time, IANA timezone, start/end dates, and ISO weekdays.
+- [x] Added append-only pregnancy completion events and superseding corrections.
+- [x] Made first completion atomically close the active pregnancy episode and set `completed_at`.
+- [x] Kept completion records factual and non-diagnostic.
+- [x] Kept completed pregnancy history viewable while `/active` remains active-only.
+- [x] Added explicit medication reminder schedules with user-selected local time, IANA timezone, date range, and weekdays.
 - [x] Required medication reminder targets to be caller-owned, active, and confirmed.
-- [x] Kept medication reminder timing completely independent of `dose_text`, prescription text, OCR, or LLM output.
-- [x] Added explicit appointment reminder schedules using a caller-selected lead time for an owned scheduled appointment.
-- [x] Kept reminder rows owner-readable but RPC-controlled for creation/disable; authenticated direct mutation is denied.
-- [x] Added a short-lived owner-scoped attachment upload-intent flow with a generated private Storage path.
-- [x] Restricted upload-intent MIME types to PDF/JPEG/PNG/WEBP and the app-level attachment size to 20 MiB.
-- [x] Required an expected SHA-256 digest before upload begins.
-- [x] Made finalization verify the exact private Storage object exists and that Storage-reported MIME type and byte size match the upload intent.
-- [x] Closed authenticated direct insert/update/delete access to `attachment_records`; finalized metadata is created only through the controlled upload handshake.
-- [x] Made finalized private Storage object paths immutable to authenticated clients while preserving owner read access.
-- [x] Added a service-role-only SHA-256 verification RPC that records `verified` or `mismatch` after a backend worker hashes the immutable object.
-- [x] Required verified attachment integrity before extraction can begin in both the Python state machine and the database extraction RPC.
-- [x] Required attachment integrity verification in addition to extraction completion and user confirmation before extracted text can become AI-context eligible.
-- [x] Added authenticated reminder APIs, attachment upload-intent/finalization APIs, and pregnancy completion API.
-- [x] Retired the Phase 8 direct attachment-registration API path in favor of the one-time upload handshake.
-- [x] Added model, repository, API, migration-contract, attachment-workflow, context-eligibility, and end-to-end local-Supabase tests.
-- [x] Updated older attachment integration fixtures to use the real upload-intent → private Storage → finalize → worker-hash path instead of privileged table shortcuts.
-- [x] Verified hash mismatch keeps extraction blocked and a correct worker hash enables extraction without exposing the service role to clients.
-- [x] Documented lifecycle, reminder, Storage immutability, worker-hash, and AI-context boundaries.
-- [x] GitHub Actions passed on `bf1ddeb`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 194 full-suite tests with 16 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 18/18 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal/pregnancy/lifecycle/reminder/upload-integrity integration tests.
+- [x] Never derive medication reminder timing from dose text, prescription text, OCR, rules, or an LLM.
+- [x] Added explicit appointment reminder lead times.
+- [x] Kept reminder schedules owner-readable but RPC-controlled for mutation.
+- [x] Added short-lived owner-scoped attachment upload intents.
+- [x] Restricted uploads to PDF/JPEG/PNG/WEBP with a 20 MiB application limit.
+- [x] Required expected SHA-256 before upload.
+- [x] Finalization verifies the exact private Storage object, MIME type, and byte size.
+- [x] Closed direct authenticated attachment-row writes.
+- [x] Made finalized object paths immutable to authenticated clients.
+- [x] Added service-only SHA-256 verification and blocked extraction until integrity is verified.
+- [x] Required verified integrity + completed extraction + user confirmation before extracted text can be context-eligible.
+- [x] GitHub Actions passed on `bf1ddeb`: 63 safety tests, 95.43% safety coverage, 194 full-suite tests, 16 expected staging skips, Docker build, and 18/18 local integration tests.
+- [x] Official progress intentionally remained 29%.
+
+## Phase 10 — deterministic reminder delivery and neutral response events ahead of the unresolved 30% gate
+
+- [x] Added a privacy-minimised `reminder_delivery_jobs` queue containing opaque identifiers, timing, status, attempts, claim metadata, and short machine failure codes only.
+- [x] Excluded medication names, dose text, schedule text, symptoms, report content, prompts, model output, and notification message bodies from delivery jobs.
+- [x] Added deterministic medication occurrence materialization from the user's explicit schedule only.
+- [x] Used PostgreSQL IANA timezone data for local-time-to-absolute-time conversion.
+- [x] Added deterministic appointment occurrence materialization from explicit appointment time minus the user's explicit lead minutes.
+- [x] Capped materialization windows and added unique occurrence indexes so repeated materialization is idempotent.
+- [x] Kept delivery-job writes service-role only while authenticated owners may read only their own jobs through RLS.
+- [x] Added backend-only materialize, claim, and completion RPCs; no public worker routes exist.
+- [x] Added `FOR UPDATE SKIP LOCKED` claiming so parallel workers cannot claim the same pending job concurrently.
+- [x] Added opaque claim tokens and exact claim-token validation on completion.
+- [x] Added 15-minute stale-claim recovery.
+- [x] Added bounded retry/backoff with a maximum of five attempts.
+- [x] Added an explicit worker clock so claim, retry, and completion timestamps are deterministic and replayable.
+- [x] Added database cancellation of pending/claimed jobs when a reminder is disabled.
+- [x] Added database cancellation when a linked medication becomes inactive/unconfirmed or an appointment leaves `scheduled` status.
+- [x] Added append-only neutral response events: `opened`, `acknowledged`, `dismissed`, and explicit `remind_later`.
+- [x] Deliberately excluded `taken`, `dose_completed`, `adherent`, or similar medication-taking claims.
+- [x] Added client-event IDs for idempotent response retries; reusing an ID with different content is rejected.
+- [x] Added one-off `remind_later` delivery occurrences at the exact timestamp selected by the user without changing the underlying medication schedule.
+- [x] Bound response synthetic/real data mode to the original delivery so direct RPC callers cannot relabel event provenance.
+- [x] Added `GET /v1/reminders/deliveries` and `POST /v1/reminders/deliveries/{delivery_id}/responses`.
+- [x] Kept worker claim tokens and transport failure metadata out of authenticated user API responses.
+- [x] Added a service-role-only worker repository without connecting any push provider.
+- [x] Added model, API, worker, migration-contract, and clean local-Supabase integration tests.
+- [x] Corrected the integration fixture after it incorrectly supplied a nonexistent `synthetic` field to `medication_records`; no schema weakening was used.
+- [x] Verified Asia/Kolkata schedule materialization, owner isolation, direct job-forging denial, service-only claiming, explicit completion clock, cross-user response denial, response idempotency, remind-later creation, retry backoff, terminal failure, and future-job cancellation.
+- [x] GitHub Actions passed on `65f7e7c`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 212 full-suite tests with 19 expected staging skips, Docker build, every migration rebuilt from zero, PostgREST schema refresh, two ephemeral synthetic users, and 19/19 local integration tests.
 - [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation gate.
 
 ## Current limitations
@@ -253,21 +173,23 @@ Percentage gate: remains at 29% until the real 29–30% clinical-authorisation a
 - No warning rule has been reviewed or approved by a licensed clinician.
 - Every current safety candidate contains development-placeholder provenance and cannot be activated.
 - Current English and Telugu escalation wording remains development-only and not clinically approved.
-- The 63 validation cases and review packets are synthetic engineering evidence, not clinical validation, diagnostic performance evidence, or real-world safety evidence.
+- The 63 validation cases and review packets are synthetic engineering evidence, not clinical validation or real-world safety evidence.
 - Rollback rehearsal evidence is synthetic and local only.
-- Atomic ruleset, reviewer-lifecycle, review-packet, and rehearsal controls are validated only in isolated local infrastructure.
-- Structured pregnancy, completion, reminder, and attachment-upload services are validated only with synthetic/local data and do not interpret clinical meaning.
-- Reminder scheduling exists, but no push-notification delivery worker or medication-adherence system is implemented yet.
-- The attachment hash-verification contract and service-only RPC exist, but no production extraction/hash worker process is implemented yet.
+- Structured pregnancy, lifecycle, attachment, reminder scheduling, and reminder delivery services are validated only with synthetic/local data and do not interpret clinical meaning.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
+- No Expo Push, FCM, APNs, email, SMS, WhatsApp, or other notification transport is connected.
+- No device push-token registry for the Janani AI backend is implemented.
+- No notification message-rendering layer is implemented.
+- No medication adherence scoring or dose-taking confirmation exists; `acknowledged` is only an application interaction.
+- No production scheduler/worker process is deployed to continuously materialize and dispatch reminder jobs.
 - No Gemini adapter or hosted LLM is connected.
 - No hosted-model response schema or output-policy validator is implemented yet.
-- No OCR engine or extraction worker process is implemented; only worker-only persistence/integrity RPCs and confirmation controls exist.
+- No OCR/extraction worker process is implemented; only worker-side integrity/extraction persistence contracts exist.
 - No approved clinical-content ingestion, embeddings, or RAG retrieval is implemented.
-- The deletion-request workflow does not yet include the controlled deletion worker, storage cleanup, session revocation, or retention-policy execution.
-- No caregiver sharing or permissions model is implemented.
+- The deletion-request workflow does not yet include controlled deletion execution, Storage cleanup, session revocation, or retention-policy execution.
+- No caregiver sharing or partner permissions model is implemented.
 - The service is not deployable for clinical use.
 
 ## Next milestone: 29–30% — real clinical authorisation and hosted staging gate
@@ -279,7 +201,7 @@ Percentage gate: remains at 29% until the real 29–30% clinical-authorisation a
 - Obtain qualified clinical and language approval of English and Telugu escalation wording.
 - Obtain independently authored and independently reviewed expected outcomes beyond the implementation team.
 - Rehearse incident ownership, reviewer deactivation, release retirement, and emergency rollback under approved operating procedures.
-- Repeat the governance, reviewer, review-packet, release, atomic-ruleset, and rehearsal workflow in isolated hosted staging using synthetic data only.
+- Repeat governance/reviewer/release/ruleset/rehearsal validation in isolated hosted staging using synthetic data only.
 - Document production access control, incident ownership, privacy, legal, security, and clinical launch sign-off.
 - Keep every rule inactive until every real-world authorization, hosted test, and launch gate passes.
 
@@ -305,54 +227,54 @@ Engineering may continue building isolated synthetic-only 30–39% components ah
 
 ## Change log
 
-### 2026-08-07 — 29% + phase-9 engineering ahead
+### 2026-08-08 — 29% + Phase 10 engineering ahead
 
-Built and verified pregnancy completion lifecycle, explicit medication/appointment reminders, and the secure attachment upload-integrity handshake on `phase-9/lifecycle-reminders-upload-integrity` while intentionally leaving official progress at 29%. Completion history is append-only and correctable by supersession; reminder times are explicit user configuration and never inferred from dose, prescription, OCR, or AI output. Direct authenticated attachment-row writes are closed. Uploads now use short-lived owner-scoped intents, private Storage, MIME/size finalization, immutable finalized object paths, and service-only SHA-256 verification before extraction. Hash mismatch blocks extraction and only verified, completed, user-confirmed extraction can become AI-context eligible. GitHub Actions passed on `bf1ddeb`: 63 safety tests with 95.43% coverage, 194 full-suite tests, 16 expected staging skips, Docker build, all migrations rebuilt from zero, and 18/18 local integration tests. No real patient data, clinician approval, hosted project change, notification delivery, OCR worker, or hosted LLM was introduced.
+Built and verified the deterministic reminder-delivery foundation on `phase-10/reminder-delivery-events` while intentionally leaving official progress at 29%. Explicit medication schedules are materialized with PostgreSQL timezone data; appointment reminders use explicit lead minutes. Delivery jobs contain only opaque references, timing, queue state, bounded retry metadata, and short machine failure codes. Service-only workers use idempotent occurrence keys, `FOR UPDATE SKIP LOCKED`, claim tokens, stale-claim recovery, an explicit worker clock, and a five-attempt cap. Database triggers cancel future jobs when their schedule or source record becomes invalid. User interactions are neutral append-only `opened`, `acknowledged`, `dismissed`, or explicit `remind_later` events and never claim a dose was taken. Response retries are idempotent and response data mode is bound to the original delivery. GitHub Actions passed on `65f7e7c`: 63 safety tests with 95.43% coverage, 212 full-suite tests, 19 expected staging skips, Docker build, every migration rebuilt from zero, and 19/19 local integration tests. No real patient data, hosted project change, push provider, production worker deployment, clinician approval, OCR worker, or hosted LLM was introduced.
 
-### 2026-08-07 — 29% + phase-8 engineering ahead
+### 2026-08-07 — 29% + Phase 9 engineering ahead
 
-Built and verified the first structured-pregnancy engineering layer on `phase-8/pregnancy-services-attachments` while intentionally leaving official progress at 29%. Added pregnancy dating/provenance contracts, append-only weight/BP/lab observations, pregnancy encounter records, superseding corrections, a factual chronological timeline, attachment integrity metadata, timeline-safe attachment summaries without extracted text, authenticated pregnancy APIs, explicit user/pregnancy query filters, RLS-protected append-only persistence, and cross-owner link triggers. GitHub Actions passed on `8914d80`: 63 safety tests with 95.43% coverage, 183 full-suite tests, 15 expected staging skips, Docker build, all migrations rebuilt from zero, and 15/15 local integration tests. No real patient data, clinical interpretation, clinical approval, hosted project change, OCR interpretation, or hosted LLM was introduced.
+Built and verified pregnancy completion lifecycle, explicit medication/appointment reminder schedules, and the secure attachment upload-integrity handshake on `phase-9/lifecycle-reminders-upload-integrity`. Reminder timing remains explicit user configuration and is never inferred from dose, prescription, OCR, or AI output. Uploads use owner-scoped intents, private Storage, MIME/size checks, immutable finalized objects, and service-only SHA-256 verification before extraction. GitHub Actions passed on `bf1ddeb`: 63 safety tests with 95.43% coverage, 194 full-suite tests, 16 expected staging skips, Docker build, and 18/18 local integration tests.
+
+### 2026-08-07 — 29% + Phase 8 engineering ahead
+
+Built and verified the first structured-pregnancy engineering layer on `phase-8/pregnancy-services-attachments`. Added factual pregnancy timeline records, append-only observations/encounters and corrections, attachment metadata, authenticated APIs, and owner-scoped persistence without clinical interpretation. GitHub Actions passed on `8914d80`: 63 safety tests with 95.43% coverage, 183 full-suite tests, 15 expected staging skips, Docker build, and 15/15 local integration tests.
 
 ### 2026-08-07 — 29%
 
-Built and verified pre-clinical review packets, expanded safety challenge datasets, immutable review/rehearsal evidence, and synthetic emergency rollback rehearsal on `phase-7/clinical-review-rehearsal`. The validation dataset now contains 63 cases across nine categories per development rule. Review packets bind exact candidate and dataset digests and remain non-eligible while placeholder sources exist. The rollback rehearsal proves exact prior ruleset restoration and persists only fully passing, evidenced synthetic rehearsals. Local validation discovered PostgreSQL `42702` from an ambiguous `value` reference; the query was fixed with explicit aliases and the persistence gate was hardened. GitHub Actions passed on `de9b594`: 63 safety tests with 95.43% coverage, 168 full-suite tests, 14 expected staging skips, Docker build, all migrations rebuilt from zero, and 14/14 local integration tests. No real clinician, patient data, clinical approval, hosted project change, or hosted LLM was introduced.
+Built and verified pre-clinical review packets, 63-case safety challenge datasets, immutable review/rehearsal evidence, and synthetic emergency rollback rehearsal on `phase-7/clinical-review-rehearsal`. GitHub Actions passed on `de9b594`: 63 safety tests with 95.43% coverage, 168 full-suite tests, 14 expected staging skips, Docker build, and 14/14 local integration tests.
 
 ### 2026-08-05 — 27%
 
-Built and verified controlled reviewer administration and executable safety validation datasets on `phase-6/reviewer-admin-validation-datasets`. Added trusted `app_metadata` authorization, disabled-by-default backend administration routes, service-role-only reviewer lifecycle RPCs, conflict-of-interest and evidence-reference controls, immutable reviewer identity, active-release deactivation protection, append-only lifecycle events, and 35 synthetic true-positive, true-negative, boundary, interaction, and regression cases. GitHub Actions passed on `dcda56f`: 49 safety tests with 96.33% coverage, 149 full-suite tests, 13 expected staging skips, Docker build, all migrations rebuilt from zero, and 13/13 local integration tests. No real clinician, credential, patient data, source approval, or hosted project was introduced.
+Built and verified reviewer administration and executable safety validation datasets on `phase-6/reviewer-admin-validation-datasets`. GitHub Actions passed on `dcda56f`: 49 safety tests with 96.33% coverage, 149 full-suite tests, 13 expected staging skips, Docker build, and 13/13 local integration tests.
 
 ### 2026-08-04 — 25%
 
-Built and verified atomic deterministic safety rulesets on `phase-5/atomic-ruleset-activation`. Added complete required-rule manifests, immutable SHA-256 member binding, private ruleset persistence, service-role-only approval/activation/rollback, active-release drift detection, transactional exact-active-set checks, PostgREST contract validation, and two-generation activation/replacement/rollback testing. GitHub Actions passed on `59c7c10`: 34 safety tests with 97.44% coverage, 94 full-suite tests, 12 expected staging skips, Docker build, all migrations rebuilt from zero, and 12/12 local integration tests. No current warning rule became clinically approved or usable with real patient data.
+Built and verified atomic deterministic safety rulesets on `phase-5/atomic-ruleset-activation`. GitHub Actions passed on `59c7c10`: 34 safety tests with 97.44% coverage, 94 full-suite tests, 12 expected staging skips, Docker build, and 12/12 local integration tests.
 
 ### 2026-08-04 — 22%
 
-Built and verified the clinical safety governance foundation on `phase-4/clinical-safety-governance`. Added exact-content review candidates, reviewer credentials and roles, source expiry and placeholder controls, gestational applicability, dual obstetrician and clinical-safety approval, release activation/retirement/rollback, immutable audit history, service-role-only Supabase governance, and local end-to-end governance validation. All seven existing warning rules remain development-only and unapprovable. GitHub Actions passed on `148565f`: 27 safety tests with 96.87% coverage, 80 full-suite tests, 10 expected staging skips, Docker build, all eight migrations rebuilt from zero, and 10/10 local integration tests.
+Built and verified the clinical safety governance foundation on `phase-4/clinical-safety-governance`. All seven warning-rule candidates remain development-only and unapprovable. GitHub Actions passed on `148565f`: 27 safety tests with 96.87% coverage, 80 full-suite tests, 10 expected staging skips, Docker build, and 10/10 local integration tests.
 
 ### 2026-08-04 — 18%
 
-Completed the free authenticated-persistence validation gate without creating a paid Supabase branch or changing the hosted Janani project. Added an isolated local Supabase Docker stack, full migration reset, ephemeral synthetic-user provisioning, worker-only extraction RPC, and a permanent CI isolation job. GitHub Actions passed on `5b4210a`: the normal quality pipeline was green and all 9 local RLS, RPC, extraction, deletion, and private-Storage tests passed.
+Completed the free authenticated-persistence validation gate without creating a paid Supabase branch or changing the hosted Janani project. GitHub Actions passed on `5b4210a` with all 9 local RLS/RPC/Storage tests passing.
 
 ### 2026-08-04 — 17%
 
-Built and verified the authenticated persistence foundation on `phase-3/authenticated-persistence`. Added Supabase token verification, RLS-scoped record loading, authenticated stored-context assembly, privacy-minimised audit RPCs, attachment state transitions, deletion-request foundations, migration hardening, and an opt-in two-user staging harness. GitHub Actions passed on implementation commit `60c4406`: Ruff lint, Ruff formatting, 12 safety tests with 92.50% safety coverage, 60 full-suite tests, one intentionally skipped staging integration test, and the Docker build.
+Built authenticated persistence on `phase-3/authenticated-persistence`: Supabase token verification, RLS-scoped record loading, stored-context assembly, privacy-minimised audit RPCs, attachment states, and deletion-request foundations.
 
 ### 2026-08-04 — 14%
 
-Built the first working data, consent, attachment, and Context Assembly Engine layer on `phase-2/data-context-foundation`. The system can transform synthetic structured records into one minimal provider-neutral LLM request while enforcing deterministic safety blocking, consent, task relevance, confirmation status, approved-content status, context budgets, and privacy-minimised auditing. GitHub Actions passed on implementation commit `8686255`: Ruff lint, Ruff formatting, 12 safety tests with 92.50% safety coverage, 40 full-suite tests, and the Docker build.
+Built the initial data, consent, attachment, and Context Assembly Engine layer on `phase-2/data-context-foundation`. GitHub Actions passed on `8686255` with 40 full-suite tests.
 
 ### 2026-08-04 — 10%
 
-Completed the free-first engineering foundation and revised Janani's architecture around controlled context assembly. GitHub Actions passed on commit `5c283d5`: Ruff lint, Ruff formatting, the safety coverage gate, the full test suite, and the Docker build.
-
-### 2026-08-04 — Architecture path revised
-
-Changed the planned AI path. Janani will assemble a minimal, relevant, verified context package from structured records and attachments, add approved clinical knowledge, and send one typed request through a provider-independent adapter. Gemini 3.5 Flash is the first planned hosted model for synthetic development; the unpaid path cannot process real health data. Added ADR 0002 and a detailed Context Assembly and Hosted LLM Flow document.
+Completed the free-first engineering foundation and provider-neutral architecture. GitHub Actions passed on `5c283d5`.
 
 ### 2026-08-03 — 8%
 
-Corrected FastAPI dependency-injection linting and test formatting. GitHub Actions completed successfully: Ruff lint, Ruff format, the safety coverage gate, the full test suite, and the Docker build all passed.
+Corrected foundation linting/formatting and verified the complete foundation CI pipeline.
 
 ### 2026-08-03 — 7%
 
-Created the free-first production foundation. Added a FastAPI service, deterministic safety-engine scaffold, draft development rules, mock LLM provider, tests, CI, Docker, Supabase migration, and documentation. Real patient use remains explicitly blocked.
+Created the initial FastAPI service, deterministic safety scaffold, mock provider, tests, CI, Docker, migration, and architecture documentation. Real patient use remained explicitly blocked.
