@@ -26,9 +26,12 @@ def test_user_device_rpcs_derive_identity_and_do_not_accept_user_id() -> None:
     ):
         assert f"create or replace function public.{function_name}" in sql
     assert "v_user_id uuid := auth.uid()" in sql
-    assert "p_user_id" not in sql.split(
-        "create or replace function public.register_janani_notification_device", 1
-    )[1].split("returns jsonb", 1)[0]
+    assert (
+        "p_user_id"
+        not in sql.split(
+            "create or replace function public.register_janani_notification_device", 1
+        )[1].split("returns jsonb", 1)[0]
+    )
 
 
 def test_worker_destination_lookup_is_claim_bound_and_service_only() -> None:
@@ -49,9 +52,9 @@ def test_safe_rpc_metadata_does_not_return_raw_token_or_fingerprint() -> None:
     register_body = sql.split(
         "create or replace function public.register_janani_notification_device", 1
     )[1].split("create or replace function public.list_janani_notification_devices", 1)[0]
-    list_body = sql.split(
-        "create or replace function public.list_janani_notification_devices", 1
-    )[1].split("create or replace function public.revoke_janani_notification_device", 1)[0]
+    list_body = sql.split("create or replace function public.list_janani_notification_devices", 1)[
+        1
+    ].split("create or replace function public.revoke_janani_notification_device", 1)[0]
     revoke_body = sql.split(
         "create or replace function public.revoke_janani_notification_device", 1
     )[1].split("create or replace function public.get_janani_notification_destinations", 1)[0]
