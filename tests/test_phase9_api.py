@@ -96,8 +96,8 @@ class FakeAttachmentUploadRepository:
 def client() -> TestClient:
     application = create_app(settings=Settings(environment="test", free_first_mode=True))
     application.dependency_overrides[get_reminder_repository] = lambda: FakeReminderRepository()
-    application.dependency_overrides[get_attachment_upload_repository] = (
-        lambda: FakeAttachmentUploadRepository()
+    application.dependency_overrides[get_attachment_upload_repository] = lambda: (
+        FakeAttachmentUploadRepository()
     )
     return TestClient(application)
 
@@ -174,9 +174,7 @@ def test_attachment_upload_intent_api_returns_generated_private_path() -> None:
 
 
 def test_attachment_finalize_api_keeps_integrity_pending_for_worker_hash() -> None:
-    response = client().post(
-        f"/v1/attachments/upload-intents/{UPLOAD_INTENT_ID}/finalize"
-    )
+    response = client().post(f"/v1/attachments/upload-intents/{UPLOAD_INTENT_ID}/finalize")
 
     assert response.status_code == 201
     assert response.json()["integrity_status"] == "pending_worker_hash"
