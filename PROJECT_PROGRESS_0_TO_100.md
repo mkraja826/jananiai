@@ -2,12 +2,12 @@
 
 This file is the permanent source of truth for Janani AI engineering progress. Update it after every meaningful architecture, code, database, safety, testing, deployment, failure/fix, or milestone change. Never store secrets or patient data here.
 
-## Current verified progress: 27%
+## Current verified progress: 29%
 
-Updated: 2026-08-05
-Branch: `phase-6/reviewer-admin-validation-datasets`
-Latest verified implementation commit: `dcda56f`
-Draft PR: `#6`
+Updated: 2026-08-07
+Branch: `phase-7/clinical-review-rehearsal`
+Latest verified implementation commit: `de9b594`
+Draft PR: `#7`
 
 ## Foundation completed and verified
 
@@ -161,16 +161,45 @@ Draft PR: `#6`
 - [x] Documented reviewer authority, evidence handling, validation categories, API boundaries, and remaining clinical gates.
 - [x] GitHub Actions passed on `dcda56f`: Ruff lint and formatting, 49 safety tests with 96.33% safety-module coverage, 149 full-suite tests with 13 expected staging skips, Docker build, all migrations rebuilt from zero, and 13/13 local RLS/RPC/Storage/governance/reviewer-lifecycle integration tests.
 
+## Phase 7 pre-clinical review packets and rollback rehearsal completed and verified
+
+- [x] Expanded deterministic validation from 35 to 63 synthetic cases.
+- [x] Required nine categories for every one of the seven development rules: true positive, true negative, boundary, interaction, regression, ambiguity, missing data, adversarial, and cross-rule.
+- [x] Added challenge cases proving ambiguous and prompt-like free text cannot manufacture structured deterministic warning signals.
+- [x] Added missing-data cases documenting current behavior when gestational week is unavailable.
+- [x] Added three-rule cross-interaction cases with exact rule-set and highest-severity expectations.
+- [x] Added immutable pre-clinical review-packet models.
+- [x] Bound each packet to candidate ID, version, canonical candidate SHA-256 digest, validation dataset version, dataset SHA-256 digest, and exact target-rule case IDs.
+- [x] Required fully passing engineering validation and all nine categories before a packet can be built or persisted.
+- [x] Required obstetrician, clinical-safety, and language-review roles in every packet.
+- [x] Added future reviewer-attestation contracts tied to the exact packet digest.
+- [x] Required approval attestations to confirm expected results, sources and sections, and escalation wording.
+- [x] Kept packets non-eligible for clinical approval while development-placeholder sources remain.
+- [x] Added a synthetic emergency rollback rehearsal runner using the existing atomic ruleset rollback service.
+- [x] Required six rehearsal evidence steps: incident detection, active-manifest verification, atomic rollback, restored-manifest verification, rolled-back-state verification, and audit evidence.
+- [x] Verified exact prior ruleset restoration and incident ruleset rollback state.
+- [x] Added private append-only review-packet and safety-rehearsal Supabase tables.
+- [x] Added service-role-only RPCs for recording review packets and rehearsal evidence.
+- [x] Denied normal users read access and RPC execution for the evidence tables.
+- [x] Blocked update and delete after evidence insertion, including for the service role.
+- [x] Added review-packet-recorded and rehearsal-recorded immutable governance events with administrator user IDs.
+- [x] Found PostgreSQL error `42702` (`column reference "value" is ambiguous`) in rehearsal step extraction during real local-Supabase validation.
+- [x] Fixed the SQL with explicit JSON-element and `unnest` aliases instead of weakening the test.
+- [x] Hardened rehearsal persistence to require top-level `passed=true`, exactly six unique required steps, every step `passed=true`, and a nonempty evidence reference for every step.
+- [x] Documented the pre-clinical review dossier, attestation boundary, immutable evidence store, and remaining launch gates.
+- [x] GitHub Actions passed on `de9b594`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 168 full-suite tests with 14 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 14/14 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal integration tests.
+
 ## Current limitations
 
 - No real licensed clinician has been onboarded through the reviewer administration flow.
-- No real reviewer credential or evidence document has been stored or verified.
+- No real reviewer credential, attestation, or identity-evidence document has been stored or verified.
 - The governance administration API remains disabled by default and has only synthetic validation.
 - No warning rule has been reviewed or approved by a licensed clinician.
 - Every current safety candidate contains development-placeholder provenance and cannot be activated.
 - Current English and Telugu escalation wording remains development-only and not clinically approved.
-- The 35 validation cases are synthetic engineering regression checks, not clinical validation or performance evidence.
-- Atomic ruleset and reviewer-lifecycle controls are validated only in isolated local infrastructure.
+- The 63 validation cases and review packets are synthetic engineering evidence, not clinical validation, diagnostic performance evidence, or real-world safety evidence.
+- Rollback rehearsal evidence is synthetic and local only.
+- Atomic ruleset, reviewer-lifecycle, review-packet, and rehearsal controls are validated only in isolated local infrastructure.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
@@ -182,18 +211,18 @@ Draft PR: `#6`
 - No caregiver sharing or permissions model is implemented.
 - The service is not deployable for clinical use.
 
-## Next milestone: 27–30% — clinical authorisation and hosted rehearsal
+## Next milestone: 29–30% — real clinical authorisation and hosted staging gate
 
-- Approve the reviewer-onboarding, conflict-of-interest, credential-verification, evidence-retention, and governance operating procedures.
+- Approve reviewer-onboarding, conflict-of-interest, credential-verification, evidence-retention, and governance operating procedures.
 - Verify real obstetrician, clinical-safety, and Telugu-language reviewer credentials outside source control.
-- Replace development placeholders with current clinician-reviewed sources and exact sections.
-- Document and clinically approve the rationale, severity, and applicability boundaries for every warning rule.
-- Review and approve English and Telugu escalation wording with qualified clinical and language reviewers.
-- Expand the synthetic datasets with independently authored ambiguity, missing-data, adversarial, and cross-rule cases.
-- Obtain reviewer sign-off on expected results independently of the implementation team.
-- Rehearse incident response, reviewer deactivation, release retirement, and emergency ruleset rollback.
-- Repeat the complete governance, reviewer, dataset, release, and atomic-ruleset workflow in isolated hosted staging.
-- Keep every rule inactive until all reviews, datasets, hosted tests, and launch gates pass.
+- Replace every development placeholder with current clinician-reviewed sources and exact sections.
+- Obtain actual human review and approval of every predicate, severity, rationale, and applicability boundary.
+- Obtain qualified clinical and language approval of English and Telugu escalation wording.
+- Obtain independently authored and independently reviewed expected outcomes beyond the implementation team.
+- Rehearse incident ownership, reviewer deactivation, release retirement, and emergency rollback under approved operating procedures.
+- Repeat the governance, reviewer, review-packet, release, atomic-ruleset, and rehearsal workflow in isolated hosted staging using synthetic data only.
+- Document production access control, incident ownership, privacy, legal, security, and clinical launch sign-off.
+- Keep every rule inactive until every real-world authorization, hosted test, and launch gate passes.
 
 ## Revised roadmap allocation
 
@@ -214,6 +243,10 @@ Draft PR: `#6`
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-07 — 29%
+
+Built and verified pre-clinical review packets, expanded safety challenge datasets, immutable review/rehearsal evidence, and synthetic emergency rollback rehearsal on `phase-7/clinical-review-rehearsal`. The validation dataset now contains 63 cases across nine categories per development rule. Review packets bind exact candidate and dataset digests and remain non-eligible while placeholder sources exist. The rollback rehearsal proves exact prior ruleset restoration and persists only fully passing, evidenced synthetic rehearsals. Local validation discovered PostgreSQL `42702` from an ambiguous `value` reference; the query was fixed with explicit aliases and the persistence gate was hardened. GitHub Actions passed on `de9b594`: 63 safety tests with 95.43% coverage, 168 full-suite tests, 14 expected staging skips, Docker build, all migrations rebuilt from zero, and 14/14 local integration tests. No real clinician, patient data, clinical approval, hosted project change, or hosted LLM was introduced.
 
 ### 2026-08-05 — 27%
 
