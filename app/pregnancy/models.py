@@ -82,6 +82,14 @@ class PregnancyCompletionCreate(BaseModel):
     supersedes_completion_event_id: UUID | None = None
     synthetic: bool = True
 
+    @model_validator(mode="after")
+    def validate_completion_source(self) -> "PregnancyCompletionCreate":
+        if self.source is RecordSource.DOCUMENT_CONFIRMED:
+            raise ValueError(
+                "Document-confirmed completion requires a future attachment-linked workflow"
+            )
+        return self
+
 
 class PregnancyCompletionEvent(PregnancyCompletionCreate):
     completion_event_id: UUID = Field(default_factory=uuid4)
