@@ -86,7 +86,11 @@ def call_service_rpc(name: str, payload: dict):
         json=payload,
         timeout=20,
     )
-    response.raise_for_status()
+    assert response.is_success, {
+        "rpc": name,
+        "status": response.status_code,
+        "body": response.text,
+    }
     return response.json()
 
 
