@@ -1,8 +1,11 @@
 from datetime import datetime
 from enum import StrEnum
+import re
 from uuid import UUID
 
-from pydantic import BaseModel, Field, SecretStr, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+
+_EXPO_PUSH_TOKEN_PATTERN = re.compile(r"^(?:Expo|Exponent)PushToken\[[^\s\]]+\]$")
 
 
 class NotificationPlatform(StrEnum):
@@ -13,6 +16,11 @@ class NotificationPlatform(StrEnum):
 
 class NotificationTransportKind(StrEnum):
     MOCK = "mock"
+    EXPO = "expo"
+
+
+def is_valid_expo_push_token(token: str) -> bool:
+    return bool(_EXPO_PUSH_TOKEN_PATTERN.fullmatch(token.strip()))
 
 
 class NotificationDeviceRegistrationRequest(BaseModel):
@@ -29,6 +37,15 @@ class NotificationDeviceRegistrationRequest(BaseModel):
         if len(token) < 8 or len(token) > 4096:
             raise ValueError("push_token must contain 8 to 4096 characters")
         return SecretStr(token)
+
+    @model_validator(mode="after")
+    def validate_transport_token(self) -> "NotificationDeviceRegistrationRequest":
+        if self.transport is NotificationTransportKind.EXPO:
+            if self.platform is NotificationPlatform.WEB:
+                raise ValueError("Expo push transport supports Android and iOS only")
+            if not is_valid_expo_push_token(self.push_token.get_secret_value()):
+                raise ValueError("Expo push transport requires a valid Expo push token")
+        return self
 
 
 class NotificationDevice(BaseModel):
