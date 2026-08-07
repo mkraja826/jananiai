@@ -60,9 +60,7 @@ class FakePregnancyRepository:
 def client() -> TestClient:
     settings = Settings(environment="test", free_first_mode=True)
     application = create_app(settings=settings)
-    application.dependency_overrides[get_pregnancy_repository] = (
-        lambda: FakePregnancyRepository()
-    )
+    application.dependency_overrides[get_pregnancy_repository] = lambda: FakePregnancyRepository()
     return TestClient(application)
 
 
