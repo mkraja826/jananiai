@@ -83,9 +83,7 @@ class FakeRestClient:
                 "source": payload["p_source"],
                 "confirmed": payload["p_confirmed"],
                 "note": payload["p_note"],
-                "supersedes_completion_event_id": payload[
-                    "p_supersedes_completion_event_id"
-                ],
+                "supersedes_completion_event_id": payload["p_supersedes_completion_event_id"],
                 "synthetic": payload["p_synthetic"],
                 "created_at": "2026-08-07T10:00:01+00:00",
             }
