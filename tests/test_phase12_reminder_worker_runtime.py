@@ -227,9 +227,7 @@ def test_worker_rejects_naive_clock_before_touching_queue() -> None:
 def test_worker_respects_batch_size_without_claiming_unbounded_jobs() -> None:
     claims = [make_claim(index) for index in range(10, 15)]
     queue = FakeQueue(claims)
-    destinations = FakeDestinations(
-        {claim.delivery_id: "mock-success:device" for claim in claims}
-    )
+    destinations = FakeDestinations({claim.delivery_id: "mock-success:device" for claim in claims})
 
     report = run_runtime(queue, destinations, batch_size=2)
 
