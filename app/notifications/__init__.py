@@ -1,8 +1,8 @@
 from app.notifications.models import (
+    NotificationDestination,
     NotificationDevice,
     NotificationDeviceOverview,
     NotificationDeviceRegistrationRequest,
-    NotificationDestination,
     NotificationEnvelope,
     NotificationPlatform,
     NotificationTransportDisposition,
@@ -12,10 +12,10 @@ from app.notifications.models import (
 )
 
 __all__ = [
+    "NotificationDestination",
     "NotificationDevice",
     "NotificationDeviceOverview",
     "NotificationDeviceRegistrationRequest",
-    "NotificationDestination",
     "NotificationEnvelope",
     "NotificationPlatform",
     "NotificationTransportDisposition",
