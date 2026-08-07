@@ -5,9 +5,9 @@ This file is the permanent source of truth for Janani AI engineering progress. U
 ## Current verified progress: 29%
 
 Updated: 2026-08-08
-Branch: `phase-10/reminder-delivery-events`
-Latest verified engineering implementation commit: `65f7e7c`
-Draft PR: `#10`
+Branch: `phase-11/notification-transport-devices`
+Latest verified engineering implementation commit: `027b60b`
+Draft PR: `#11`
 Percentage gate: remains at 29% until the real 29–30% clinical-authorisation and hosted-staging requirements pass.
 
 Engineering is allowed to continue building isolated synthetic-only components ahead of this gate. Those components do not advance the official verified percentage beyond 29%.
@@ -165,6 +165,29 @@ Engineering is allowed to continue building isolated synthetic-only components a
 - [x] GitHub Actions passed on `65f7e7c`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 212 full-suite tests with 19 expected staging skips, Docker build, every migration rebuilt from zero, PostgREST schema refresh, two ephemeral synthetic users, and 19/19 local integration tests.
 - [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation gate.
 
+## Phase 11 — private notification devices and provider-neutral transport ahead of the unresolved 30% gate
+
+- [x] Added a private `notification_devices` registry for installation identity, platform, transport, lifecycle state, synthetic/real provenance, and backend-only push-token storage.
+- [x] Kept the raw notification-device table inaccessible to `anon` and `authenticated`; only `service_role` has direct table access.
+- [x] Added authenticated registration, list, and revoke RPCs that derive ownership from `auth.uid()` instead of accepting a caller-supplied user ID.
+- [x] Kept raw push tokens and token fingerprints out of authenticated API/RPC responses.
+- [x] Wrapped push tokens in `SecretStr` at Python boundaries so tokens are excluded from normal repr/serialization.
+- [x] Added atomic token rotation when the same user re-registers an installation.
+- [x] Added SHA-256 token fingerprints and advisory transaction locking so concurrent cross-user registration of the same active transport token cannot race past ownership checks.
+- [x] Added a service-role-only destination lookup bound to the exact active reminder `delivery_id + claim_token`.
+- [x] Required destination synthetic/real provenance to match the delivery job provenance.
+- [x] Added provider-neutral `NotificationTransport` and deterministic network-free `MockNotificationTransport` contracts.
+- [x] Added a generic notification envelope with title `Janani reminder`, body `You have a reminder in Janani.`, and only opaque `delivery_id` routing data.
+- [x] Excluded medication names, dose text, symptoms, appointment details, reports, diagnosis, treatment, prompts, and model output from transport content.
+- [x] Added deterministic dispatcher semantics: any successful destination marks the queue job sent; no active destination is retryable; mixed terminal/retryable failures remain retryable; all-terminal failures close terminally.
+- [x] Preserved the Phase 10 five-attempt queue cap, retry timing, claim-token completion, and neutral user-response semantics.
+- [x] Added authenticated APIs to list, register, and revoke notification devices without exposing worker secrets.
+- [x] Kept worker dispatch off public routes and did not connect Expo Push, FCM, APNs, email, SMS, WhatsApp, or another hosted provider.
+- [x] Added model, API, repository, worker, dispatch, migration-security, and clean local-Supabase integration tests.
+- [x] Verified two-user isolation, direct raw-table read/write denial, token rotation, cross-user token conflict denial, cross-user revoke denial, claim-bound destination lookup, stale-claim denial, revocation removal, and mock delivery completion.
+- [x] GitHub Actions passed on `027b60b`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 231 full-suite tests with 21 expected staging skips, Docker build, every migration rebuilt from zero, PostgREST schema refresh, two ephemeral synthetic users, and 21/21 local integration tests.
+- [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation or hosted-staging gate.
+
 ## Current limitations
 
 - No real licensed clinician has been onboarded through the reviewer administration flow.
@@ -175,14 +198,14 @@ Engineering is allowed to continue building isolated synthetic-only components a
 - Current English and Telugu escalation wording remains development-only and not clinically approved.
 - The 63 validation cases and review packets are synthetic engineering evidence, not clinical validation or real-world safety evidence.
 - Rollback rehearsal evidence is synthetic and local only.
-- Structured pregnancy, lifecycle, attachment, reminder scheduling, and reminder delivery services are validated only with synthetic/local data and do not interpret clinical meaning.
+- Structured pregnancy, lifecycle, attachment, reminder scheduling, reminder delivery, and notification-device services are validated only with synthetic/local data and do not interpret clinical meaning.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
-- No Expo Push, FCM, APNs, email, SMS, WhatsApp, or other notification transport is connected.
-- No device push-token registry for the Janani AI backend is implemented.
-- No notification message-rendering layer is implemented.
-- No medication adherence scoring or dose-taking confirmation exists; `acknowledged` is only an application interaction.
+- A private notification-device registry and provider-neutral transport foundation now exist, but the only implemented transport is the deterministic local `mock` provider.
+- No Expo Push, FCM, APNs, email, SMS, WhatsApp, or other hosted notification transport is connected.
+- Notification rendering is intentionally generic; no clinical details are permitted in lock-screen content.
+- No medication adherence scoring or dose-taking confirmation exists; delivery `sent` only means a destination accepted the generic notification and `acknowledged` is only an application interaction.
 - No production scheduler/worker process is deployed to continuously materialize and dispatch reminder jobs.
 - No Gemini adapter or hosted LLM is connected.
 - No hosted-model response schema or output-policy validator is implemented yet.
@@ -226,6 +249,10 @@ Engineering may continue building isolated synthetic-only 30–39% components ah
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-08 — 29% + Phase 11 engineering ahead
+
+Built and verified the private notification-device and provider-neutral transport foundation on `phase-11/notification-transport-devices` while intentionally leaving official progress at 29%. Raw push tokens are confined to a service-readable table and secret-bearing worker models; authenticated callers manage only safe device metadata through identity-derived RPCs. Same-installation registration rotates tokens atomically, and fingerprint advisory locking prevents cross-user active-token races. Worker destination lookup requires the exact active reminder claim and matches synthetic/real provenance. The notification envelope is deliberately generic—`Janani reminder` / `You have a reminder in Janani.`—with only opaque `delivery_id` routing data, so medication, dose, symptom, appointment, report, diagnosis, treatment, prompt, and model-output content never enters lock-screen transport. A deterministic mock transport verifies send/retry/terminal behavior without any hosted provider. GitHub Actions passed on `027b60b`: 63 safety tests with 95.43% coverage, 231 full-suite tests, 21 expected staging skips, Docker build, every migration rebuilt from zero, and 21/21 local integration tests. No real patient data, hosted Supabase change, real notification provider, deployed continuous worker, clinician approval, OCR worker, or hosted LLM was introduced.
 
 ### 2026-08-08 — 29% + Phase 10 engineering ahead
 
