@@ -175,15 +175,14 @@ def test_explicit_reminders_require_owned_confirmed_records_and_rpc_mutation() -
 
     medication = httpx.post(
         rest_url("medication_records"),
-        headers=service_headers(prefer="return=representation"),
+        headers=headers(USER_A_TOKEN, prefer="return=representation"),
         json={
             "id": medication_id,
             "user_id": USER_A_ID,
             "name": "Synthetic confirmed medication",
-            "source": "clinician_entered",
+            "source": "user_entered",
             "confirmed": True,
             "active": True,
-            "synthetic": True,
         },
         timeout=20,
     )
@@ -191,14 +190,13 @@ def test_explicit_reminders_require_owned_confirmed_records_and_rpc_mutation() -
 
     appointment = httpx.post(
         rest_url("appointment_records"),
-        headers=service_headers(prefer="return=representation"),
+        headers=headers(USER_A_TOKEN, prefer="return=representation"),
         json={
             "id": appointment_id,
             "user_id": USER_A_ID,
             "scheduled_at": "2026-08-10T10:00:00Z",
             "purpose": "Synthetic prenatal appointment",
             "status": "scheduled",
-            "synthetic": True,
         },
         timeout=20,
     )
@@ -282,7 +280,7 @@ def test_explicit_reminders_require_owned_confirmed_records_and_rpc_mutation() -
 
 
 def test_attachment_upload_intent_hash_verification_and_extraction_gate() -> None:
-    assert SUPABASE_URL and USER_A_TOKEN and USER_B_TOKEN
+    assert SUPABASE_URL and USER_A_TOKEN and USER_B_TOKEN and USER_A_ID
     pregnancy_id = insert_pregnancy()
     content = b"%PDF-1.4 synthetic phase nine attachment"
     digest = hashlib.sha256(content).hexdigest()
@@ -338,9 +336,11 @@ def test_attachment_upload_intent_hash_verification_and_extraction_gate() -> Non
     assert attachment["integrity_status"] == "pending_worker_hash"
     assert attachment["upload_intent_id"] == intent["id"]
 
-    overwrite = httpx.put(
+    overwrite_headers = headers(USER_A_TOKEN, content_type="application/pdf")
+    overwrite_headers["x-upsert"] = "true"
+    overwrite = httpx.post(
         object_url,
-        headers=headers(USER_A_TOKEN, content_type="application/pdf"),
+        headers=overwrite_headers,
         content=b"%PDF-1.4 changed",
         timeout=20,
     )
