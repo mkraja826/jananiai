@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
@@ -22,7 +22,7 @@ def test_delivery_requires_exactly_one_matching_schedule_reference() -> None:
         delivery_id=DELIVERY_ID,
         reminder_kind=ReminderKind.MEDICATION,
         medication_reminder_id=REMINDER_ID,
-        scheduled_for=datetime(2030, 1, 1, 3, 0, tzinfo=timezone.utc),
+        scheduled_for=datetime(2030, 1, 1, 3, 0, tzinfo=UTC),
         status=ReminderDeliveryStatus.PENDING,
         attempt_count=0,
     )
@@ -35,7 +35,7 @@ def test_delivery_requires_exactly_one_matching_schedule_reference() -> None:
             delivery_id=DELIVERY_ID,
             reminder_kind=ReminderKind.MEDICATION,
             appointment_reminder_id=REMINDER_ID,
-            scheduled_for=datetime(2030, 1, 1, 3, 0, tzinfo=timezone.utc),
+            scheduled_for=datetime(2030, 1, 1, 3, 0, tzinfo=UTC),
             status=ReminderDeliveryStatus.PENDING,
             attempt_count=0,
         )
@@ -45,8 +45,8 @@ def test_remind_later_requires_explicit_future_timezone_aware_time() -> None:
     response = ReminderResponseCreate(
         client_event_id=EVENT_ID,
         event_type=ReminderResponseType.REMIND_LATER,
-        occurred_at=datetime(2030, 1, 1, 3, 5, tzinfo=timezone.utc),
-        remind_at=datetime(2030, 1, 1, 4, 0, tzinfo=timezone.utc),
+        occurred_at=datetime(2030, 1, 1, 3, 5, tzinfo=UTC),
+        remind_at=datetime(2030, 1, 1, 4, 0, tzinfo=UTC),
     )
 
     assert response.remind_at is not None
@@ -55,7 +55,7 @@ def test_remind_later_requires_explicit_future_timezone_aware_time() -> None:
         ReminderResponseCreate(
             client_event_id=EVENT_ID,
             event_type=ReminderResponseType.REMIND_LATER,
-            occurred_at=datetime(2030, 1, 1, 3, 5, tzinfo=timezone.utc),
+            occurred_at=datetime(2030, 1, 1, 3, 5, tzinfo=UTC),
         )
 
     with pytest.raises(ValidationError):
