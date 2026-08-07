@@ -115,8 +115,7 @@ class Settings(BaseSettings):
     @property
     def expo_push_configured(self) -> bool:
         return bool(
-            self.expo_push_access_token
-            and self.expo_push_access_token.get_secret_value().strip()
+            self.expo_push_access_token and self.expo_push_access_token.get_secret_value().strip()
         )
 
     @property
