@@ -96,11 +96,12 @@ class PregnancyObservationCreate(BaseModel):
             self.label is None or self.value_text is None
         ):
             raise ValueError("Lab-result observations require label and value_text")
-        if self.source is RecordSource.DOCUMENT_CONFIRMED:
-            if not self.confirmed or self.source_attachment_id is None:
-                raise ValueError(
-                    "Document-confirmed observations require confirmation and source attachment"
-                )
+        if self.source is RecordSource.DOCUMENT_CONFIRMED and (
+            not self.confirmed or self.source_attachment_id is None
+        ):
+            raise ValueError(
+                "Document-confirmed observations require confirmation and source attachment"
+            )
         return self
 
 
@@ -133,11 +134,12 @@ class PregnancyEncounterCreate(BaseModel):
     def validate_encounter(self) -> "PregnancyEncounterCreate":
         if self.next_follow_up_at is not None and self.next_follow_up_at < self.occurred_at:
             raise ValueError("next_follow_up_at cannot be earlier than occurred_at")
-        if self.source is RecordSource.DOCUMENT_CONFIRMED:
-            if not self.confirmed or self.source_attachment_id is None:
-                raise ValueError(
-                    "Document-confirmed encounters require confirmation and source attachment"
-                )
+        if self.source is RecordSource.DOCUMENT_CONFIRMED and (
+            not self.confirmed or self.source_attachment_id is None
+        ):
+            raise ValueError(
+                "Document-confirmed encounters require confirmation and source attachment"
+            )
         return self
 
 
