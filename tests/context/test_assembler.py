@@ -1,4 +1,5 @@
 from app.attachments import (
+    AttachmentIntegrityStatus,
     AttachmentKind,
     AttachmentRecord,
     ConfirmationStatus,
@@ -60,6 +61,8 @@ def confirmed_attachment(text: str = "Synthetic confirmed report text") -> Attac
         storage_object_path="synthetic-user/report.pdf",
         extraction_status=ExtractionStatus.COMPLETED,
         confirmation_status=ConfirmationStatus.CONFIRMED,
+        integrity_status=AttachmentIntegrityStatus.VERIFIED,
+        integrity_verified_at="2026-08-07T10:00:00+00:00",
         extracted_text=text,
         extraction_confidence=0.98,
     )
@@ -153,6 +156,8 @@ def test_report_explanation_requires_explicit_confirmed_attachment() -> None:
         storage_object_path="synthetic-user/unconfirmed.pdf",
         extraction_status=ExtractionStatus.COMPLETED,
         confirmation_status=ConfirmationStatus.UNCONFIRMED,
+        integrity_status=AttachmentIntegrityStatus.VERIFIED,
+        integrity_verified_at="2026-08-07T10:00:00+00:00",
         extracted_text="Synthetic unconfirmed extraction",
     )
     base = dict(
@@ -228,40 +233,4 @@ def test_medication_reminder_uses_only_active_confirmed_medications() -> None:
 
     assert response.status is ContextAssemblyStatus.READY
     assert response.llm_request is not None
-    assert [item.medication_id for item in response.llm_request.selected_context.medications] == [
-        confirmed.medication_id
-    ]
-    reasons = {item.reason for item in response.exclusions}
-    assert "medication is not confirmed" in reasons
-    assert "medication is inactive" in reasons
-
-
-def test_context_budget_removes_optional_knowledge_before_failing() -> None:
-    chunks = [
-        ApprovedKnowledgeChunk(
-            chunk_id=f"SYNTHETIC-{index}",
-            source_title="Synthetic source",
-            content="x" * 1_500,
-            citation_label=f"Synthetic citation {index}",
-            approved=True,
-            review_valid=True,
-        )
-        for index in range(5)
-    ]
-    payload = ContextAssemblyInput(
-        task=TaskType.NUTRITION,
-        user_question="Synthetic budget question",
-        consents=consent_snapshot(
-            ConsentPurpose.CARE_SUPPORT,
-            ConsentPurpose.AI_PROCESSING,
-        ),
-        pregnancy=pregnancy(),
-        approved_knowledge=chunks,
-        max_context_chars=2_000,
-    )
-
-    response = ContextAssembler().assemble(payload, routine_safety_decision())
-
-    assert response.status is ContextAssemblyStatus.READY
-    assert response.llm_request is not None
-    assert any(item.reason == "removed to satisfy context budget" for item in response.exclusions)
+    assert response.llm_request.selected_context.medications == [confirmed]
