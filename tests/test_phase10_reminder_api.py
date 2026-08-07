@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -28,7 +28,7 @@ class FakeReminderDeliveryRepository:
                     delivery_id=DELIVERY_ID,
                     reminder_kind=ReminderKind.MEDICATION,
                     medication_reminder_id=REMINDER_ID,
-                    scheduled_for=datetime(2030, 1, 1, 3, 0, tzinfo=timezone.utc),
+                    scheduled_for=datetime(2030, 1, 1, 3, 0, tzinfo=UTC),
                     status=ReminderDeliveryStatus.SENT,
                     attempt_count=1,
                 )
