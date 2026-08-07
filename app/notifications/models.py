@@ -1,6 +1,6 @@
+import re
 from datetime import datetime
 from enum import StrEnum
-import re
 from uuid import UUID
 
 from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
