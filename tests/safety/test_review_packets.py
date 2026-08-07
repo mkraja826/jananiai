@@ -64,7 +64,9 @@ def test_packet_digest_changes_when_review_content_changes() -> None:
     candidate, dataset, report = validation_inputs()
     packet = ClinicalReviewPacketBuilder().build(candidate, dataset, report, generated_at=NOW)
 
-    changed = packet.model_copy(update={"clinical_rationale": packet.clinical_rationale + " Updated."})
+    changed = packet.model_copy(
+        update={"clinical_rationale": packet.clinical_rationale + " Updated."}
+    )
 
     assert packet.content_digest() != changed.content_digest()
 
