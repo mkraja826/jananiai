@@ -372,9 +372,7 @@ class SupabasePregnancyRepository:
                 UUID(row["source_attachment_id"]) if row.get("source_attachment_id") else None
             ),
             supersedes_encounter_id=(
-                UUID(row["supersedes_encounter_id"])
-                if row.get("supersedes_encounter_id")
-                else None
+                UUID(row["supersedes_encounter_id"]) if row.get("supersedes_encounter_id") else None
             ),
             created_at=row.get("created_at"),
             synthetic=bool(row.get("synthetic", True)),
