@@ -91,9 +91,7 @@ def test_repository_filters_timeline_reads_by_user_and_pregnancy() -> None:
 
     assert timeline.pregnancy.pregnancy_id == PREGNANCY_ID
     timeline_calls = [
-        (table, params)
-        for table, params in client.select_calls
-        if table != "pregnancies"
+        (table, params) for table, params in client.select_calls if table != "pregnancies"
     ]
     assert len(timeline_calls) == 4
     for _, params in timeline_calls:
@@ -111,9 +109,7 @@ def test_repository_creates_typed_observation_after_owner_check() -> None:
         weight_kg=62.5,
     )
 
-    observation = asyncio.run(
-        repository.create_observation(authenticated_user(), payload)
-    )
+    observation = asyncio.run(repository.create_observation(authenticated_user(), payload))
 
     assert observation.weight_kg == 62.5
     assert client.insert_calls[0][0] == "pregnancy_observations"
@@ -130,9 +126,7 @@ def test_attachment_registration_requires_owner_storage_prefix() -> None:
         content_sha256="B" * 64,
     )
 
-    attachment = asyncio.run(
-        repository.register_attachment(authenticated_user(), payload)
-    )
+    attachment = asyncio.run(repository.register_attachment(authenticated_user(), payload))
 
     assert attachment.content_sha256 == "b" * 64
     assert attachment.storage_object_path.startswith(f"{USER_ID}/")
