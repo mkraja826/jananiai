@@ -1,12 +1,17 @@
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
+from uuid import UUID
 
 from app.config import Settings
-from app.notifications.dispatch import ReminderNotificationDispatcher
+from app.notifications.dispatch import NotificationDestinationWorker, ReminderNotificationDispatcher
 from app.notifications.models import NotificationTransportDisposition
 from app.notifications.transport import MockNotificationTransport, NotificationTransport
 from app.notifications.worker import SupabaseNotificationWorkerRepository
-from app.reminders.models import ReminderDispatchClaim, ReminderDispatchOutcome
+from app.reminders.models import (
+    ReminderDelivery,
+    ReminderDispatchClaim,
+    ReminderDispatchOutcome,
+)
 from app.reminders.worker import SupabaseReminderDeliveryWorkerRepository
 from app.workers.models import ReminderWorkerRunReport, ReminderWorkerRunState
 
@@ -29,12 +34,12 @@ class ReminderWorkerQueue(Protocol):
     async def complete(
         self,
         *,
-        delivery_id,
-        claim_token,
+        delivery_id: UUID,
+        claim_token: UUID,
         outcome: ReminderDispatchOutcome,
         now: datetime,
         failure_code: str | None = None,
-    ): ...
+    ) -> ReminderDelivery: ...
 
 
 class ReminderWorkerConfigurationError(RuntimeError):
@@ -48,7 +53,7 @@ class ReminderWorkerRuntime:
         self,
         *,
         queue: ReminderWorkerQueue,
-        destinations,
+        destinations: NotificationDestinationWorker,
         transport: NotificationTransport,
         batch_size: int = 50,
         lookback_minutes: int = 15,
@@ -145,7 +150,9 @@ async def run_configured_reminder_worker_once(
     if not settings.reminder_worker_enabled:
         raise ReminderWorkerConfigurationError("Reminder worker is disabled")
     if not settings.supabase_worker_configured or settings.supabase_service_role_key is None:
-        raise ReminderWorkerConfigurationError("Reminder worker backend configuration is incomplete")
+        raise ReminderWorkerConfigurationError(
+            "Reminder worker backend configuration is incomplete"
+        )
     if settings.reminder_worker_transport != "mock":
         raise ReminderWorkerConfigurationError("Only the mock reminder transport is available")
 
