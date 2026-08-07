@@ -1,8 +1,6 @@
 from pathlib import Path
 
-MIGRATION = Path(
-    "supabase/migrations/20260807170000_structured_pregnancy_timeline.sql"
-)
+MIGRATION = Path("supabase/migrations/20260807170000_structured_pregnancy_timeline.sql")
 
 
 def migration_sql() -> str:
