@@ -1,8 +1,8 @@
+import asyncio
 from datetime import datetime, timezone
 from uuid import UUID
 
 import httpx
-import pytest
 
 from app.reminders.models import ReminderDispatchOutcome
 from app.reminders.worker import SupabaseReminderDeliveryWorkerRepository
@@ -56,33 +56,35 @@ def transport(request: httpx.Request) -> httpx.Response:
     return httpx.Response(404)
 
 
-@pytest.mark.asyncio
-async def test_worker_materializes_claims_and_completes_opaque_jobs() -> None:
-    client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
-    repository = SupabaseReminderDeliveryWorkerRepository(
-        supabase_url="https://synthetic.supabase.co",
-        service_role_key="synthetic-service-role",
-        client=client,
-    )
+def test_worker_materializes_claims_and_completes_opaque_jobs() -> None:
+    async def run() -> None:
+        client = httpx.AsyncClient(transport=httpx.MockTransport(transport))
+        repository = SupabaseReminderDeliveryWorkerRepository(
+            supabase_url="https://synthetic.supabase.co",
+            service_role_key="synthetic-service-role",
+            client=client,
+        )
 
-    count = await repository.materialize(
-        window_start=datetime(2030, 1, 1, 2, 0, tzinfo=timezone.utc),
-        window_end=datetime(2030, 1, 1, 4, 0, tzinfo=timezone.utc),
-    )
-    claims = await repository.claim(
-        now=datetime(2030, 1, 1, 3, 0, 30, tzinfo=timezone.utc),
-        limit=10,
-    )
-    completed = await repository.complete(
-        delivery_id=DELIVERY_ID,
-        claim_token=CLAIM_TOKEN,
-        outcome=ReminderDispatchOutcome.SENT,
-    )
+        count = await repository.materialize(
+            window_start=datetime(2030, 1, 1, 2, 0, tzinfo=timezone.utc),
+            window_end=datetime(2030, 1, 1, 4, 0, tzinfo=timezone.utc),
+        )
+        claims = await repository.claim(
+            now=datetime(2030, 1, 1, 3, 0, 30, tzinfo=timezone.utc),
+            limit=10,
+        )
+        completed = await repository.complete(
+            delivery_id=DELIVERY_ID,
+            claim_token=CLAIM_TOKEN,
+            outcome=ReminderDispatchOutcome.SENT,
+        )
 
-    assert count == 2
-    assert claims[0].delivery_id == DELIVERY_ID
-    assert claims[0].claim_token == CLAIM_TOKEN
-    assert completed.status.value == "sent"
-    assert not hasattr(completed, "claim_token")
+        assert count == 2
+        assert claims[0].delivery_id == DELIVERY_ID
+        assert claims[0].claim_token == CLAIM_TOKEN
+        assert completed.status.value == "sent"
+        assert not hasattr(completed, "claim_token")
 
-    await client.aclose()
+        await client.aclose()
+
+    asyncio.run(run())
