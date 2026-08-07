@@ -3,11 +3,12 @@ from uuid import UUID
 
 from fastapi.testclient import TestClient
 
-from app.attachments import AttachmentRegistration, AttachmentSummary
 from app.config import Settings
 from app.main import create_app
 from app.pregnancy.dependencies import get_pregnancy_repository
 from app.pregnancy.models import (
+    PregnancyCompletionCreate,
+    PregnancyCompletionEvent,
     PregnancyEncounter,
     PregnancyEncounterCreate,
     PregnancyEpisode,
@@ -40,20 +41,11 @@ class FakePregnancyRepository:
             **payload.model_dump(),
         )
 
-    async def register_attachment(self, user, payload: AttachmentRegistration):
-        return AttachmentSummary(
-            attachment_id=UUID("00000000-0000-0000-0000-000000000834"),
-            pregnancy_id=payload.pregnancy_id,
-            kind=payload.kind,
-            mime_type=payload.mime_type,
-            storage_object_path=payload.storage_object_path,
-            document_date=payload.document_date,
-            display_label=payload.display_label,
-            capture_source=payload.capture_source,
-            file_size_bytes=payload.file_size_bytes,
-            content_sha256=payload.content_sha256,
+    async def record_completion(self, user, payload: PregnancyCompletionCreate):
+        return PregnancyCompletionEvent(
+            completion_event_id=UUID("00000000-0000-0000-0000-000000000834"),
             created_at=datetime(2026, 8, 7, 10, tzinfo=UTC),
-            synthetic=payload.synthetic,
+            **payload.model_dump(),
         )
 
 
@@ -89,6 +81,23 @@ def test_synthetic_observation_is_accepted() -> None:
 
     assert response.status_code == 201
     assert response.json()["weight_kg"] == 62.5
+
+
+def test_synthetic_pregnancy_completion_is_recorded() -> None:
+    response = client().post(
+        "/v1/pregnancy/complete",
+        json={
+            "pregnancy_id": str(PREGNANCY_ID),
+            "occurred_at": "2026-08-07T09:00:00Z",
+            "completion_type": "delivery",
+            "confirmed": True,
+            "note": "Synthetic delivery record",
+            "synthetic": True,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["completion_type"] == "delivery"
 
 
 def test_real_health_payload_is_blocked_in_free_first_mode() -> None:
