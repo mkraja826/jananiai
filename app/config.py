@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Literal
 from uuid import UUID
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +31,12 @@ class Settings(BaseSettings):
 
     governance_admin_api_enabled: bool = False
 
+    reminder_worker_enabled: bool = False
+    reminder_worker_transport: Literal["mock"] = "mock"
+    reminder_worker_batch_size: int = Field(default=50, ge=1, le=100)
+    reminder_worker_materialization_lookback_minutes: int = Field(default=15, ge=0, le=1440)
+    reminder_worker_materialization_horizon_minutes: int = Field(default=1440, ge=1, le=10080)
+
     @model_validator(mode="after")
     def enforce_runtime_restrictions(self) -> "Settings":
         if self.free_first_mode and self.allow_real_patient_data:
@@ -57,6 +63,16 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "Governance administration requires a backend-only Supabase service-role key"
                 )
+
+        if self.reminder_worker_enabled:
+            if not self.supabase_worker_configured:
+                raise ValueError(
+                    "Reminder worker requires a Supabase URL and backend-only service-role key"
+                )
+            if self.environment == "production":
+                raise ValueError(
+                    "Production reminder worker remains blocked until the production launch gate"
+                )
         return self
 
     @property
@@ -77,6 +93,14 @@ class Settings(BaseSettings):
         return bool(
             self.supabase_service_role_key
             and self.supabase_service_role_key.get_secret_value().strip()
+        )
+
+    @property
+    def supabase_worker_configured(self) -> bool:
+        return bool(
+            self.supabase_url
+            and self.supabase_url.strip()
+            and self.supabase_service_role_configured
         )
 
     @property
