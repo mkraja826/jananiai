@@ -6,6 +6,7 @@ import pytest
 
 SUPABASE_URL = os.getenv("JANANI_STAGING_SUPABASE_URL")
 PUBLISHABLE_KEY = os.getenv("JANANI_STAGING_SUPABASE_PUBLISHABLE_KEY")
+SERVICE_ROLE_KEY = os.getenv("JANANI_STAGING_SUPABASE_SERVICE_ROLE_KEY")
 USER_A_ID = os.getenv("JANANI_STAGING_USER_A_ID")
 USER_A_TOKEN = os.getenv("JANANI_STAGING_USER_A_TOKEN")
 USER_B_ID = os.getenv("JANANI_STAGING_USER_B_ID")
@@ -14,6 +15,7 @@ USER_B_TOKEN = os.getenv("JANANI_STAGING_USER_B_TOKEN")
 _REQUIRED = [
     SUPABASE_URL,
     PUBLISHABLE_KEY,
+    SERVICE_ROLE_KEY,
     USER_A_ID,
     USER_A_TOKEN,
     USER_B_ID,
@@ -33,6 +35,18 @@ def headers(token: str, *, prefer: str | None = None) -> dict[str, str]:
     result = {
         "apikey": PUBLISHABLE_KEY or "",
         "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    if prefer:
+        result["Prefer"] = prefer
+    return result
+
+
+def service_headers(*, prefer: str | None = None) -> dict[str, str]:
+    key = SERVICE_ROLE_KEY or ""
+    result = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
     if prefer:
@@ -67,22 +81,24 @@ def create_episode(token: str, user_id: str) -> str:
     return episode_id
 
 
-def create_attachment(token: str, user_id: str, pregnancy_id: str) -> str:
+def create_attachment(user_id: str, pregnancy_id: str) -> str:
     attachment_id = str(uuid4())
     response = httpx.post(
         rest_url("attachment_records"),
-        headers=headers(token, prefer="return=representation"),
+        headers=service_headers(prefer="return=representation"),
         json={
             "id": attachment_id,
             "user_id": user_id,
             "pregnancy_id": pregnancy_id,
             "kind": "lab_report",
             "mime_type": "application/pdf",
-            "storage_object_path": f"{user_id}/{attachment_id}.pdf",
+            "storage_object_path": f"{user_id}/fixtures/{attachment_id}.pdf",
             "display_label": "Synthetic report",
             "capture_source": "file_upload",
             "file_size_bytes": 1234,
             "content_sha256": "a" * 64,
+            "integrity_status": "verified",
+            "integrity_verified_at": "2026-08-07T10:00:00Z",
             "synthetic": True,
         },
         timeout=20,
@@ -92,13 +108,10 @@ def create_attachment(token: str, user_id: str, pregnancy_id: str) -> str:
 
 
 def test_structured_timeline_records_are_owner_scoped_and_append_only() -> None:
-    assert USER_A_TOKEN is not None
-    assert USER_B_TOKEN is not None
-    assert USER_A_ID is not None
-    assert USER_B_ID is not None
+    assert USER_A_TOKEN and USER_B_TOKEN and USER_A_ID and USER_B_ID
 
     pregnancy_a = create_episode(USER_A_TOKEN, USER_A_ID)
-    attachment_a = create_attachment(USER_A_TOKEN, USER_A_ID, pregnancy_a)
+    attachment_a = create_attachment(USER_A_ID, pregnancy_a)
 
     observation_id = str(uuid4())
     observation = httpx.post(
