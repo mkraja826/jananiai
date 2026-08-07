@@ -60,6 +60,36 @@ class PregnancyEpisode(BaseModel):
         return self
 
 
+class PregnancyCompletionType(StrEnum):
+    DELIVERY = "delivery"
+    PREGNANCY_LOSS = "pregnancy_loss"
+    OTHER = "other"
+
+
+class PregnancyCompletionCreate(BaseModel):
+    pregnancy_id: UUID
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completion_type: PregnancyCompletionType
+    source: "RecordSource" = None  # type: ignore[assignment]
+    confirmed: bool = False
+    note: str | None = Field(default=None, max_length=1_000)
+    supersedes_completion_event_id: UUID | None = None
+    synthetic: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def default_source(cls, values):
+        if isinstance(values, dict) and values.get("source") is None:
+            values = dict(values)
+            values["source"] = RecordSource.USER_ENTERED
+        return values
+
+
+class PregnancyCompletionEvent(PregnancyCompletionCreate):
+    completion_event_id: UUID = Field(default_factory=uuid4)
+    created_at: datetime | None = None
+
+
 class ObservationKind(StrEnum):
     WEIGHT = "weight"
     BLOOD_PRESSURE = "blood_pressure"
@@ -70,6 +100,10 @@ class RecordSource(StrEnum):
     USER_ENTERED = "user_entered"
     CLINICIAN_ENTERED = "clinician_entered"
     DOCUMENT_CONFIRMED = "document_confirmed"
+
+
+PregnancyCompletionCreate.model_rebuild()
+PregnancyCompletionEvent.model_rebuild()
 
 
 class PregnancyObservationCreate(BaseModel):
@@ -157,6 +191,7 @@ class TimelineItemKind(StrEnum):
     ENCOUNTER = "encounter"
     APPOINTMENT = "appointment"
     ATTACHMENT = "attachment"
+    COMPLETION = "completion"
 
 
 class PregnancyTimelineItem(BaseModel):
