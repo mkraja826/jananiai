@@ -56,11 +56,11 @@ def test_development_dataset_covers_every_rule_and_required_category() -> None:
     expected_rule_ids = {rule.metadata.rule_id for rule in build_development_rules()}
     counts = Counter(case.target_rule_id for case in dataset.cases)
 
-    assert dataset.dataset_version == "dev-validation-2026-08-05.1"
+    assert dataset.dataset_version == "dev-validation-2026-08-07.1"
     assert dataset.ruleset_version == DEVELOPMENT_RULESET_VERSION
-    assert len(dataset.cases) == 35
+    assert len(dataset.cases) == 63
     assert set(counts) == expected_rule_ids
-    assert set(counts.values()) == {5}
+    assert set(counts.values()) == {9}
     for rule_id in expected_rule_ids:
         categories = {case.category for case in dataset.cases if case.target_rule_id == rule_id}
         assert categories == REQUIRED_CASE_CATEGORIES
@@ -73,11 +73,44 @@ def test_development_dataset_passes_the_current_deterministic_engine() -> None:
     )
 
     assert report.all_passed
-    assert report.total_cases == 35
-    assert report.passed_cases == 35
+    assert report.total_cases == 63
+    assert report.passed_cases == 63
     assert report.failed_cases == 0
-    assert set(report.cases_by_rule.values()) == {5}
+    assert set(report.cases_by_rule.values()) == {9}
     assert all(result.passed and not result.mismatches for result in report.results)
+
+
+def test_challenge_categories_preserve_structured_input_authority() -> None:
+    dataset = build_development_validation_dataset()
+    engine = development_engine()
+    report = SafetyValidationRunner().run(dataset, engine)
+    result_by_id = {result.case_id: result for result in report.results}
+
+    challenge_categories = {
+        ValidationCaseCategory.AMBIGUITY,
+        ValidationCaseCategory.MISSING_DATA,
+        ValidationCaseCategory.ADVERSARIAL,
+        ValidationCaseCategory.CROSS_RULE,
+    }
+    challenge_cases = [case for case in dataset.cases if case.category in challenge_categories]
+
+    assert len(challenge_cases) == 28
+    assert all(result_by_id[case.case_id].passed for case in challenge_cases)
+    assert all(
+        not case.expected.triggered
+        for case in challenge_cases
+        if case.category in {ValidationCaseCategory.AMBIGUITY, ValidationCaseCategory.ADVERSARIAL}
+    )
+    assert all(
+        case.payload.gestational_week is None and case.expected.triggered
+        for case in challenge_cases
+        if case.category is ValidationCaseCategory.MISSING_DATA
+    )
+    assert all(
+        len(case.expected.exact_rule_ids) >= 3
+        for case in challenge_cases
+        if case.category is ValidationCaseCategory.CROSS_RULE
+    )
 
 
 def test_runner_reports_trigger_severity_rule_and_blocking_mismatches() -> None:
@@ -205,6 +238,49 @@ def test_regression_requires_ignored_free_text_documentation() -> None:
         )
 
 
+def test_ambiguity_requires_ambiguous_input_documentation() -> None:
+    with pytest.raises(ValidationError, match="ambiguous input"):
+        valid_case(
+            category=ValidationCaseCategory.AMBIGUITY,
+            payload=SymptomAssessmentRequest(is_synthetic=True),
+            expected=routine_expectation(),
+        )
+
+
+def test_missing_data_requires_omitted_gestational_week() -> None:
+    with pytest.raises(ValidationError, match="omit gestational week"):
+        valid_case(
+            category=ValidationCaseCategory.MISSING_DATA,
+            payload=SymptomAssessmentRequest(
+                is_synthetic=True,
+                gestational_week=20,
+                seizure=True,
+            ),
+        )
+
+
+def test_adversarial_case_requires_free_text() -> None:
+    with pytest.raises(ValidationError, match="adversarial free text"):
+        valid_case(
+            category=ValidationCaseCategory.ADVERSARIAL,
+            payload=SymptomAssessmentRequest(is_synthetic=True),
+            expected=routine_expectation(),
+        )
+
+
+def test_cross_rule_requires_three_expected_rules() -> None:
+    with pytest.raises(ValidationError, match="at least three rules"):
+        valid_case(
+            category=ValidationCaseCategory.CROSS_RULE,
+            expected=SafetyValidationExpectation(
+                triggered=True,
+                severity=SafetySeverity.EMERGENCY,
+                exact_rule_ids=("DEV-SEIZURE-001", "DEV-HEAVY-BLEEDING-001"),
+                blocks_llm=True,
+            ),
+        )
+
+
 def test_dataset_rejects_duplicate_case_ids() -> None:
     dataset = build_development_validation_dataset()
     duplicate = dataset.cases[0].model_copy(
@@ -238,7 +314,7 @@ def test_dataset_requires_all_categories_for_each_rule() -> None:
         for case in dataset.cases
         if not (
             case.target_rule_id == "DEV-SEIZURE-001"
-            and case.category is ValidationCaseCategory.REGRESSION
+            and case.category is ValidationCaseCategory.ADVERSARIAL
         )
     )
 
