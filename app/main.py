@@ -2,9 +2,11 @@ from fastapi import FastAPI
 
 from app import __version__
 from app.api.account_routes import router as account_router
+from app.api.attachment_routes import router as attachment_router
 from app.api.context_routes import router as context_router
 from app.api.governance_routes import router as governance_router
 from app.api.pregnancy_routes import router as pregnancy_router
+from app.api.reminder_routes import router as reminder_router
 from app.api.routes import get_safety_engine, router
 from app.config import Settings, get_settings
 from app.safety.engine import SafetyEngine
@@ -40,6 +42,8 @@ def create_app(
     application.include_router(account_router)
     application.include_router(governance_router)
     application.include_router(pregnancy_router)
+    application.include_router(reminder_router)
+    application.include_router(attachment_router)
 
     if settings is not None:
 
