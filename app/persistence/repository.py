@@ -4,6 +4,8 @@ from typing import Protocol
 from uuid import UUID
 
 from app.attachments import (
+    AttachmentCaptureSource,
+    AttachmentIntegrityStatus,
     AttachmentKind,
     AttachmentRecord,
     ConfirmationStatus,
@@ -308,6 +310,7 @@ class SupabaseUserContextRepository:
             extraction = latest.get(str(row["id"]))
             extraction_status = ExtractionStatus(row["extraction_status"])
             confirmation_status = ConfirmationStatus(row["confirmation_status"])
+            integrity_status = AttachmentIntegrityStatus(row.get("integrity_status", "unverified"))
             extracted_text = extraction.get("extracted_text") if extraction else None
             confidence = extraction.get("confidence") if extraction else None
 
@@ -318,11 +321,21 @@ class SupabaseUserContextRepository:
             attachments.append(
                 AttachmentRecord(
                     attachment_id=UUID(row["id"]),
+                    pregnancy_id=(UUID(row["pregnancy_id"]) if row.get("pregnancy_id") else None),
                     kind=AttachmentKind(row["kind"]),
                     mime_type=row["mime_type"],
                     storage_object_path=row["storage_object_path"],
                     extraction_status=extraction_status,
                     confirmation_status=confirmation_status,
+                    integrity_status=integrity_status,
+                    integrity_verified_at=row.get("integrity_verified_at"),
+                    document_date=row.get("document_date"),
+                    display_label=row.get("display_label"),
+                    capture_source=AttachmentCaptureSource(
+                        row.get("capture_source", "file_upload")
+                    ),
+                    file_size_bytes=row.get("file_size_bytes"),
+                    content_sha256=row.get("content_sha256"),
                     extracted_text=extracted_text,
                     extraction_confidence=confidence,
                     synthetic=synthetic,

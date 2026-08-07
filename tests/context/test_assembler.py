@@ -1,4 +1,5 @@
 from app.attachments import (
+    AttachmentIntegrityStatus,
     AttachmentKind,
     AttachmentRecord,
     ConfirmationStatus,
@@ -60,6 +61,8 @@ def confirmed_attachment(text: str = "Synthetic confirmed report text") -> Attac
         storage_object_path="synthetic-user/report.pdf",
         extraction_status=ExtractionStatus.COMPLETED,
         confirmation_status=ConfirmationStatus.CONFIRMED,
+        integrity_status=AttachmentIntegrityStatus.VERIFIED,
+        integrity_verified_at="2026-08-07T10:00:00+00:00",
         extracted_text=text,
         extraction_confidence=0.98,
     )
@@ -153,6 +156,8 @@ def test_report_explanation_requires_explicit_confirmed_attachment() -> None:
         storage_object_path="synthetic-user/unconfirmed.pdf",
         extraction_status=ExtractionStatus.COMPLETED,
         confirmation_status=ConfirmationStatus.UNCONFIRMED,
+        integrity_status=AttachmentIntegrityStatus.VERIFIED,
+        integrity_verified_at="2026-08-07T10:00:00+00:00",
         extracted_text="Synthetic unconfirmed extraction",
     )
     base = dict(

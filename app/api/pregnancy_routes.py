@@ -2,12 +2,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.attachments import AttachmentRegistration, AttachmentSummary
 from app.auth import CurrentUserDependency
 from app.config import Settings, get_settings
 from app.persistence import SupabasePersistenceError
 from app.pregnancy.dependencies import PregnancyRepositoryDependency
 from app.pregnancy.models import (
+    PregnancyCompletionCreate,
+    PregnancyCompletionEvent,
     PregnancyEncounter,
     PregnancyEncounterCreate,
     PregnancyEpisode,
@@ -87,18 +88,18 @@ async def create_pregnancy_encounter(
 
 
 @router.post(
-    "/attachments/register",
-    response_model=AttachmentSummary,
+    "/complete",
+    response_model=PregnancyCompletionEvent,
     status_code=status.HTTP_201_CREATED,
 )
-async def register_pregnancy_attachment(
-    payload: AttachmentRegistration,
+async def record_pregnancy_completion(
+    payload: PregnancyCompletionCreate,
     settings: SettingsDependency,
     user: CurrentUserDependency,
     repository: PregnancyRepositoryDependency,
-) -> AttachmentSummary:
+) -> PregnancyCompletionEvent:
     _enforce_data_mode(synthetic=payload.synthetic, settings=settings)
     try:
-        return await repository.register_attachment(user, payload)
+        return await repository.record_completion(user, payload)
     except SupabasePersistenceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc

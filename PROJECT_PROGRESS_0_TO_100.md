@@ -5,9 +5,9 @@ This file is the permanent source of truth for Janani AI engineering progress. U
 ## Current verified progress: 29%
 
 Updated: 2026-08-07
-Branch: `phase-8/pregnancy-services-attachments`
-Latest verified engineering implementation commit: `8914d80`
-Draft PR: `#8`
+Branch: `phase-9/lifecycle-reminders-upload-integrity`
+Latest verified engineering implementation commit: `bf1ddeb`
+Draft PR: `#9`
 Percentage gate: remains at 29% until the real 29–30% clinical-authorisation and hosted-staging requirements pass.
 
 ## Foundation completed and verified
@@ -215,6 +215,36 @@ Percentage gate: remains at 29% until the real 29–30% clinical-authorisation a
 - [x] GitHub Actions passed on `8914d80`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 183 full-suite tests with 15 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 15/15 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal/pregnancy-timeline integration tests.
 - [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation gate.
 
+## Phase 9 lifecycle, reminders, and upload-integrity engineering built ahead of the unresolved 30% gate
+
+- [x] Added append-only pregnancy completion events for delivery, pregnancy loss, and other explicitly recorded completion states.
+- [x] Made the first completion event atomically close the active pregnancy episode and set `completed_at`.
+- [x] Made completion corrections append-only through explicit supersession instead of mutating historical events.
+- [x] Kept completion records factual only; document-derived completion remains blocked pending a future attachment-linked confirmation workflow.
+- [x] Made the pregnancy timeline load the latest episode so completed pregnancy history remains viewable after completion while `/active` remains active-only.
+- [x] Added explicit medication reminder schedules with local time, IANA timezone, start/end dates, and ISO weekdays.
+- [x] Required medication reminder targets to be caller-owned, active, and confirmed.
+- [x] Kept medication reminder timing completely independent of `dose_text`, prescription text, OCR, or LLM output.
+- [x] Added explicit appointment reminder schedules using a caller-selected lead time for an owned scheduled appointment.
+- [x] Kept reminder rows owner-readable but RPC-controlled for creation/disable; authenticated direct mutation is denied.
+- [x] Added a short-lived owner-scoped attachment upload-intent flow with a generated private Storage path.
+- [x] Restricted upload-intent MIME types to PDF/JPEG/PNG/WEBP and the app-level attachment size to 20 MiB.
+- [x] Required an expected SHA-256 digest before upload begins.
+- [x] Made finalization verify the exact private Storage object exists and that Storage-reported MIME type and byte size match the upload intent.
+- [x] Closed authenticated direct insert/update/delete access to `attachment_records`; finalized metadata is created only through the controlled upload handshake.
+- [x] Made finalized private Storage object paths immutable to authenticated clients while preserving owner read access.
+- [x] Added a service-role-only SHA-256 verification RPC that records `verified` or `mismatch` after a backend worker hashes the immutable object.
+- [x] Required verified attachment integrity before extraction can begin in both the Python state machine and the database extraction RPC.
+- [x] Required attachment integrity verification in addition to extraction completion and user confirmation before extracted text can become AI-context eligible.
+- [x] Added authenticated reminder APIs, attachment upload-intent/finalization APIs, and pregnancy completion API.
+- [x] Retired the Phase 8 direct attachment-registration API path in favor of the one-time upload handshake.
+- [x] Added model, repository, API, migration-contract, attachment-workflow, context-eligibility, and end-to-end local-Supabase tests.
+- [x] Updated older attachment integration fixtures to use the real upload-intent → private Storage → finalize → worker-hash path instead of privileged table shortcuts.
+- [x] Verified hash mismatch keeps extraction blocked and a correct worker hash enables extraction without exposing the service role to clients.
+- [x] Documented lifecycle, reminder, Storage immutability, worker-hash, and AI-context boundaries.
+- [x] GitHub Actions passed on `bf1ddeb`: Ruff lint and formatting, 63 safety tests with 95.43% safety-module coverage, 194 full-suite tests with 16 expected staging skips, Docker build, every migration rebuilt from zero, two synthetic users provisioned, and 18/18 local RLS/RPC/Storage/governance/reviewer/evidence/rehearsal/pregnancy/lifecycle/reminder/upload-integrity integration tests.
+- [x] Official progress intentionally remains 29%; this engineering-ahead work does not satisfy the real clinical-authorisation gate.
+
 ## Current limitations
 
 - No real licensed clinician has been onboarded through the reviewer administration flow.
@@ -226,13 +256,15 @@ Percentage gate: remains at 29% until the real 29–30% clinical-authorisation a
 - The 63 validation cases and review packets are synthetic engineering evidence, not clinical validation, diagnostic performance evidence, or real-world safety evidence.
 - Rollback rehearsal evidence is synthetic and local only.
 - Atomic ruleset, reviewer-lifecycle, review-packet, and rehearsal controls are validated only in isolated local infrastructure.
-- Structured pregnancy timeline, observation, encounter, and attachment-metadata services are validated only with synthetic/local data and do not interpret clinical meaning.
+- Structured pregnancy, completion, reminder, and attachment-upload services are validated only with synthetic/local data and do not interpret clinical meaning.
+- Reminder scheduling exists, but no push-notification delivery worker or medication-adherence system is implemented yet.
+- The attachment hash-verification contract and service-only RPC exist, but no production extraction/hash worker process is implemented yet.
 - No real patient data may be processed.
 - The existing hosted Janani Supabase project has not been modified.
 - No dedicated hosted staging project or paid Supabase branch exists; validation currently uses isolated local Docker infrastructure.
 - No Gemini adapter or hosted LLM is connected.
 - No hosted-model response schema or output-policy validator is implemented yet.
-- No OCR engine or extraction worker process is implemented; only the worker-only persistence RPC and confirmation controls exist.
+- No OCR engine or extraction worker process is implemented; only worker-only persistence/integrity RPCs and confirmation controls exist.
 - No approved clinical-content ingestion, embeddings, or RAG retrieval is implemented.
 - The deletion-request workflow does not yet include the controlled deletion worker, storage cleanup, session revocation, or retention-policy execution.
 - No caregiver sharing or permissions model is implemented.
@@ -272,6 +304,10 @@ Engineering may continue building isolated synthetic-only 30–39% components ah
 - 99–100%: production-readiness gate
 
 ## Change log
+
+### 2026-08-07 — 29% + phase-9 engineering ahead
+
+Built and verified pregnancy completion lifecycle, explicit medication/appointment reminders, and the secure attachment upload-integrity handshake on `phase-9/lifecycle-reminders-upload-integrity` while intentionally leaving official progress at 29%. Completion history is append-only and correctable by supersession; reminder times are explicit user configuration and never inferred from dose, prescription, OCR, or AI output. Direct authenticated attachment-row writes are closed. Uploads now use short-lived owner-scoped intents, private Storage, MIME/size finalization, immutable finalized object paths, and service-only SHA-256 verification before extraction. Hash mismatch blocks extraction and only verified, completed, user-confirmed extraction can become AI-context eligible. GitHub Actions passed on `bf1ddeb`: 63 safety tests with 95.43% coverage, 194 full-suite tests, 16 expected staging skips, Docker build, all migrations rebuilt from zero, and 18/18 local integration tests. No real patient data, clinician approval, hosted project change, notification delivery, OCR worker, or hosted LLM was introduced.
 
 ### 2026-08-07 — 29% + phase-8 engineering ahead
 

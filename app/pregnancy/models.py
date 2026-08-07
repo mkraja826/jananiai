@@ -19,6 +19,12 @@ class PregnancyDatingSource(StrEnum):
     ULTRASOUND_ESTIMATED_DUE_DATE = "ultrasound_estimated_due_date"
 
 
+class RecordSource(StrEnum):
+    USER_ENTERED = "user_entered"
+    CLINICIAN_ENTERED = "clinician_entered"
+    DOCUMENT_CONFIRMED = "document_confirmed"
+
+
 class PregnancyEpisode(BaseModel):
     """Structured pregnancy episode metadata without diagnostic interpretation."""
 
@@ -60,16 +66,40 @@ class PregnancyEpisode(BaseModel):
         return self
 
 
+class PregnancyCompletionType(StrEnum):
+    DELIVERY = "delivery"
+    PREGNANCY_LOSS = "pregnancy_loss"
+    OTHER = "other"
+
+
+class PregnancyCompletionCreate(BaseModel):
+    pregnancy_id: UUID
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completion_type: PregnancyCompletionType
+    source: RecordSource = RecordSource.USER_ENTERED
+    confirmed: bool = False
+    note: str | None = Field(default=None, max_length=1_000)
+    supersedes_completion_event_id: UUID | None = None
+    synthetic: bool = True
+
+    @model_validator(mode="after")
+    def validate_completion_source(self) -> "PregnancyCompletionCreate":
+        if self.source is RecordSource.DOCUMENT_CONFIRMED:
+            raise ValueError(
+                "Document-confirmed completion requires a future attachment-linked workflow"
+            )
+        return self
+
+
+class PregnancyCompletionEvent(PregnancyCompletionCreate):
+    completion_event_id: UUID = Field(default_factory=uuid4)
+    created_at: datetime | None = None
+
+
 class ObservationKind(StrEnum):
     WEIGHT = "weight"
     BLOOD_PRESSURE = "blood_pressure"
     LAB_RESULT = "lab_result"
-
-
-class RecordSource(StrEnum):
-    USER_ENTERED = "user_entered"
-    CLINICIAN_ENTERED = "clinician_entered"
-    DOCUMENT_CONFIRMED = "document_confirmed"
 
 
 class PregnancyObservationCreate(BaseModel):
@@ -157,6 +187,7 @@ class TimelineItemKind(StrEnum):
     ENCOUNTER = "encounter"
     APPOINTMENT = "appointment"
     ATTACHMENT = "attachment"
+    COMPLETION = "completion"
 
 
 class PregnancyTimelineItem(BaseModel):

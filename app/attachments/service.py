@@ -1,4 +1,5 @@
 from app.attachments.models import (
+    AttachmentIntegrityStatus,
     AttachmentRecord,
     ConfirmationStatus,
     ExtractionStatus,
@@ -10,9 +11,13 @@ class InvalidAttachmentTransition(ValueError):
 
 
 class AttachmentWorkflow:
-    """Pure state transitions for extraction and user confirmation."""
+    """Pure state transitions for verified extraction and user confirmation."""
 
     def start_extraction(self, record: AttachmentRecord) -> AttachmentRecord:
+        if record.integrity_status is not AttachmentIntegrityStatus.VERIFIED:
+            raise InvalidAttachmentTransition(
+                "Attachment integrity must be verified before extraction can start"
+            )
         if record.extraction_status not in {
             ExtractionStatus.NOT_STARTED,
             ExtractionStatus.FAILED,
@@ -36,6 +41,10 @@ class AttachmentWorkflow:
         extracted_text: str,
         confidence: float | None,
     ) -> AttachmentRecord:
+        if record.integrity_status is not AttachmentIntegrityStatus.VERIFIED:
+            raise InvalidAttachmentTransition(
+                "Attachment integrity must remain verified through extraction"
+            )
         if record.extraction_status is not ExtractionStatus.PROCESSING:
             raise InvalidAttachmentTransition("Only processing attachments can complete extraction")
         return AttachmentRecord(
@@ -66,6 +75,10 @@ class AttachmentWorkflow:
         )
 
     def confirm(self, record: AttachmentRecord) -> AttachmentRecord:
+        if record.integrity_status is not AttachmentIntegrityStatus.VERIFIED:
+            raise InvalidAttachmentTransition(
+                "Only integrity-verified attachments can be confirmed"
+            )
         if record.extraction_status is not ExtractionStatus.COMPLETED:
             raise InvalidAttachmentTransition("Only completed extraction can be confirmed")
         return record.model_copy(update={"confirmation_status": ConfirmationStatus.CONFIRMED})
